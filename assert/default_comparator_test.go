@@ -114,12 +114,13 @@ func TestEquals(t *testing.T) {
 			// when
 			instanceT := &testing.T{}
 			assert := New(instanceT)
-			assert.That(tc.got).Equals(tc.want)
+			assert(tc.got).Equals(tc.want)
 
 			// then
-			if tc.wantTFailed != instanceT.Failed() {
-				subT.Errorf("expected %#v (want) equals %#v (got) to be %v, found %v", tc.want, tc.got, tc.wantTFailed, instanceT.Failed())
+			if tc.wantTFailed == instanceT.Failed() {
+				return
 			}
+			subT.Errorf("expected assert(%#v).Equals(%#v) to be %v, found %v", tc.got, tc.want, !tc.wantTFailed, !instanceT.Failed())
 		})
 	}
 
@@ -204,7 +205,7 @@ func TestIsNil(t *testing.T) {
 		t.Run(name, func(subT *testing.T) {
 			// when
 			assert := New(tc.givenT)
-			assert.That(tc.got).IsNil()
+			assert(tc.got).IsNil()
 
 			gotTFailed := tc.givenT.Failed()
 
@@ -212,7 +213,7 @@ func TestIsNil(t *testing.T) {
 			if gotTFailed == tc.wantTFailed {
 				return
 			}
-			subT.Errorf("expected IsNil( %#v ) to be %v, found %v", tc.got, tc.wantTFailed, gotTFailed)
+			subT.Errorf("expected assert(%#v).IsNil() to be %v, found %v", tc.got, !tc.wantTFailed, !gotTFailed)
 		})
 	}
 }
@@ -296,7 +297,7 @@ func TestIsNotNil(t *testing.T) {
 		t.Run(name, func(subT *testing.T) {
 			// when
 			assert := New(tc.givenT)
-			assert.That(tc.got).IsNotNil()
+			assert(tc.got).IsNotNil()
 
 			gotTFailed := tc.givenT.Failed()
 
@@ -304,7 +305,7 @@ func TestIsNotNil(t *testing.T) {
 			if gotTFailed == tc.wantTFailed {
 				return
 			}
-			subT.Errorf("expected IsNotNil( %#v ) to be %v, found %v", tc.got, tc.wantTFailed, gotTFailed)
+			subT.Errorf("expected assert(%#v).IsNotNil() to be %v, found %v", tc.got, !tc.wantTFailed, !gotTFailed)
 		})
 	}
 }
@@ -492,7 +493,7 @@ func TestEqualsElementsInIgnoringOrder(t *testing.T) {
 		t.Run(name, func(subT *testing.T) {
 			// when
 			assert := New(tc.givenT)
-			assert.That(tc.got).EqualsElementsInIgnoringOrder(tc.want)
+			assert(tc.got).EqualsElementsInIgnoringOrder(tc.want)
 
 			gotTFailed := tc.givenT.Failed()
 
@@ -500,7 +501,7 @@ func TestEqualsElementsInIgnoringOrder(t *testing.T) {
 			if gotTFailed == tc.wantTFailed {
 				return
 			}
-			subT.Errorf("expected %#v (want) equalsElementsInIgnoringOrder %#v (got) to be %v, found %v", tc.want, tc.got, tc.wantTFailed, gotTFailed)
+			subT.Errorf("expected assert(%#v).EqualsElementsInIgnoringOrder(%#v) to be %v, found %v", tc.got, tc.want, !tc.wantTFailed, !gotTFailed)
 		})
 	}
 }
