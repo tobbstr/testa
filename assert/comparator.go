@@ -26,15 +26,23 @@ type comparator interface {
 	// same, and if their elements are equal ignoring order.
 	EqualsElementsInIgnoringOrder(want interface{})
 
-	// IsEmpty checks whether the observed value is empty. If not, the function
+	// IsEmpty checks whether the observed value is empty. If not empty, the function
 	// under test is marked as having failed.
+	// Arrays, channels, maps and slices are considered empty if they're nil or has zero
+	// length.
+	// Pointers are considered empty if the dereferenced values are nil.
+	// For all other types, the zero value is considered empty.
 	IsEmpty()
 
-	// IsNil checks whether the observed value is nil. If not, the function
+	// IsNil checks whether the observed value is nil. If not nil, the function
 	// under test is marked as having failed.
 	IsNil()
 
-	// IsNotNil checks whether the observed value is not nil. If not, the function
+	// IsNotEmpty checks whether the observed value isn't empty. If empty, the function
+	// under test is marked as having failed.
+	IsNotEmpty()
+
+	// IsNotNil checks whether the observed value is not nil. If nil, the function
 	// under test is marked as having failed.
 	IsNotNil()
 }
@@ -94,6 +102,12 @@ func isNil(got interface{}, errorf func(string, ...interface{})) {
 		}
 	}
 	errorf("expected nil value, found %+v", got)
+}
+
+func isNotEmpty(got interface{}, errorf func(string, ...interface{})) {
+	if isEmpty(got) {
+		errorf("expected %#v not to be empty, found empty", got)
+	}
 }
 
 func isNotNil(got interface{}, errorf func(string, ...interface{})) {
@@ -167,7 +181,7 @@ func isEmpty(obj interface{}) bool {
 		return isEmpty(objValue.Elem().Interface())
 	default:
 		objTypeZeroValue := reflect.Zero(objValue.Type())
-		return reflect.DeepEqual(obj, objTypeZeroValue)
+		return reflect.DeepEqual(obj, objTypeZeroValue.Interface())
 	}
 }
 

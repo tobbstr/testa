@@ -25,6 +25,10 @@ func (d defaultComparator) IsNil() {
 	isNil(d.got, d.t.Errorf)
 }
 
+func (d defaultComparator) IsNotEmpty() {
+	isNotEmpty(d.got, d.t.Errorf)
+}
+
 func (d defaultComparator) IsNotNil() {
 	isNotNil(d.got, d.t.Errorf)
 }

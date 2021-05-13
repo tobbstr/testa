@@ -8,8 +8,9 @@ type defaultAssert struct {
 	t *testing.T
 }
 
-// NewFatal returns an assert interface implementation which does not allow code
-// execution to continue when tests fail.
+// NewFatal returns an assert function, which is used to make assertions.
+// If any assertion fails using this function, code execution is immediately stopped
+// and the test is marked as having failed.
 func NewFatal(t *testing.T) func(got interface{}) comparator {
 	return func(got interface{}) comparator {
 		return fatalComparator{
@@ -19,8 +20,9 @@ func NewFatal(t *testing.T) func(got interface{}) comparator {
 	}
 }
 
-// New returns an assert interface implementation which allows code execution
-// to continue when tests fail.
+// New returns an assert function, which is used to make assertions.
+// If any assertion fails using this function, code execution is allowed to continue,
+// but the test is marked as having failed.
 func New(t *testing.T) func(got interface{}) comparator {
 	return func(got interface{}) comparator {
 		return defaultComparator{
