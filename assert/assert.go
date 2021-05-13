@@ -4,10 +4,6 @@ import (
 	"testing"
 )
 
-type defaultAssert struct {
-	t *testing.T
-}
-
 // NewFatal returns an assert function, which is used to make assertions.
 // If any assertion fails using this function, code execution is immediately stopped
 // and the test is marked as having failed.
