@@ -32,3 +32,11 @@ func (f fatalComparator) IsNotEmpty() {
 func (f fatalComparator) IsNotNil() {
 	isNotNil(f.got, f.t.Fatalf)
 }
+
+func (f fatalComparator) IsTrue() {
+	isTrue(f.got, f.t.Fatalf)
+}
+
+func (f fatalComparator) IsFalse() {
+	isFalse(f.got, f.t.Fatalf)
+}
