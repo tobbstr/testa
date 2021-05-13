@@ -12,47 +12,49 @@ var nilableKinds []reflect.Kind = []reflect.Kind{
 }
 
 type comparator interface {
-	// Equals compares for equality, the 'want' argument (expected value) with the observed.
+	// Equals asserts the 'want' argument (expected value) is equal to the observed.
 	// They are considered equal if both are nil or if they're deeply equal according to
 	// reflect.DeepEqual's definition of equal.
 	Equals(want interface{}) bool
 
-	// EqualsElementsInIgnoringOrder compares for equality, ignoring order, the 'want' argument
-	// (expected value) with the observed. Valid types for comparison are slices and arrays,
-	// but it's also valid to compare slices with arrays and vice versa. Comparing other types
-	// or if the values being compared are not equal, the function under test is marked as
-	// having failed.
+	// EqualsElementsInIgnoringOrder asserts the 'want' argument (expected value) is equal to
+	// the observed, ignoring order. Valid types for comparison are slices and arrays, but it's
+	// also valid to compare slices with arrays and vice versa. Comparing other types or if the
+	// values being compared are not equal, the function under test is marked as having failed.
 	// Two sequences of elements are equal if their number of elements are the
 	// same, and if their elements are equal ignoring order.
 	EqualsElementsInIgnoringOrder(want interface{})
 
-	// IsEmpty checks whether the observed value is empty. If not empty, the function
-	// under test is marked as having failed.
-	// Arrays, channels, maps and slices are considered empty if they're nil or has zero
-	// length.
-	// Pointers are considered empty if the dereferenced values are nil.
+	// IsEmpty asserts the observed value is empty. If not empty, the function under test is
+	// marked as having failed.
+	// Arrays, channels, maps and slices are considered empty if they're nil or has zero length.
+	// Pointers are considered empty if the referenced values are nil.
 	// For all other types, the zero value is considered empty.
 	IsEmpty()
 
-	// IsNil checks whether the observed value is nil. If not nil, the function
+	// IsFalse asserts the observed value is false. Otherwise, the function
+	// under test is marked as having failed.
+	IsFalse()
+
+	// IsFunction asserts the observed value is a function value. If not, the function under test
+	// is marked as having failed.
+	IsFunction()
+
+	// IsNil asserts the observed value is nil. If not nil, the function
 	// under test is marked as having failed.
 	IsNil()
 
-	// IsNotEmpty checks whether the observed value isn't empty. If empty, the function
+	// IsNotEmpty asserts the observed value isn't empty. If empty, the function
 	// under test is marked as having failed.
 	IsNotEmpty()
 
-	// IsNotNil checks whether the observed value is not nil. If nil, the function
+	// IsNotNil asserts the observed value is not nil. If nil, the function
 	// under test is marked as having failed.
 	IsNotNil()
 
 	// IsTrue asserts the observed value is true. Otherwise, the function
 	// under test is marked as having failed.
 	IsTrue()
-
-	// IsFalse asserts the observed value is false. Otherwise, the function
-	// under test is marked as having failed.
-	IsFalse()
 }
 
 func equals(got, want interface{}, errorf func(string, ...interface{})) bool {
