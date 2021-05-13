@@ -17,7 +17,13 @@ func (d defaultComparator) EqualsElementsInIgnoringOrder(want interface{}) {
 
 func (d defaultComparator) IsEmpty() {
 	if !isEmpty(d.got) {
-		d.t.Errorf("expected 'got' value to be empty, found %#v", d.got)
+		d.t.Errorf("expected observed value to be empty, found %#v", d.got)
+	}
+}
+
+func (d defaultComparator) IsFunction() {
+	if !isFunc(d.got) {
+		d.t.Errorf("expected observed value to be a function value, found %#v", d.got)
 	}
 }
 

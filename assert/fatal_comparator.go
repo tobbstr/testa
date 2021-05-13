@@ -17,7 +17,13 @@ func (f fatalComparator) EqualsElementsInIgnoringOrder(want interface{}) {
 
 func (f fatalComparator) IsEmpty() {
 	if !isEmpty(f.got) {
-		f.t.Fatalf("expected 'got' value to be empty, found %#v", f.got)
+		f.t.Fatalf("expected observed value to be empty, found %#v", f.got)
+	}
+}
+
+func (f fatalComparator) IsFunction() {
+	if !isFunc(f.got) {
+		f.t.Fatalf("expected observed value to be a function value, found %#v", f.got)
 	}
 }
 
