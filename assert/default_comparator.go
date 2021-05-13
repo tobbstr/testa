@@ -32,3 +32,11 @@ func (d defaultComparator) IsNotEmpty() {
 func (d defaultComparator) IsNotNil() {
 	isNotNil(d.got, d.t.Errorf)
 }
+
+func (d defaultComparator) IsTrue() {
+	isTrue(d.got, d.t.Errorf)
+}
+
+func (d defaultComparator) IsFalse() {
+	isFalse(d.got, d.t.Errorf)
+}

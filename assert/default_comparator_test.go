@@ -880,3 +880,99 @@ func TestIsNotNil(t *testing.T) {
 		})
 	}
 }
+
+func TestIsTrue(t *testing.T) {
+	testCases := map[string]struct {
+		got              interface{}
+		givenT           *testing.T
+		wantAssertPassed bool
+	}{
+		"should fail when get nil": {
+			got:              nil,
+			givenT:           &testing.T{},
+			wantAssertPassed: false,
+		},
+		"should fail when get non-bool": {
+			got:              nonZero["int"],
+			givenT:           &testing.T{},
+			wantAssertPassed: false,
+		},
+		"should pass when get true bool": {
+			got:              nonZero["bool"],
+			givenT:           &testing.T{},
+			wantAssertPassed: true,
+		},
+		"should fail when get false bool": {
+			got:              zero["bool"],
+			givenT:           &testing.T{},
+			wantAssertPassed: false,
+		},
+	}
+
+	t.Parallel()
+	for name, tc := range testCases {
+		tc := tc
+		t.Run(name, func(subT *testing.T) {
+			// given
+			assert := New(tc.givenT)
+
+			// when
+			assert(tc.got).IsTrue()
+
+			// then
+			gotAssertPassed := !tc.givenT.Failed()
+			if gotAssertPassed == tc.wantAssertPassed {
+				return
+			}
+			subT.Errorf("expected assert(%#v).IsTrue() to be %v, found %v", tc.got, tc.wantAssertPassed, gotAssertPassed)
+		})
+	}
+}
+
+func TestIsFalse(t *testing.T) {
+	testCases := map[string]struct {
+		got              interface{}
+		givenT           *testing.T
+		wantAssertPassed bool
+	}{
+		"should fail when get nil": {
+			got:              nil,
+			givenT:           &testing.T{},
+			wantAssertPassed: false,
+		},
+		"should fail when get non-bool": {
+			got:              nonZero["int"],
+			givenT:           &testing.T{},
+			wantAssertPassed: false,
+		},
+		"should fail when get true bool": {
+			got:              nonZero["bool"],
+			givenT:           &testing.T{},
+			wantAssertPassed: false,
+		},
+		"should pass when get false bool": {
+			got:              zero["bool"],
+			givenT:           &testing.T{},
+			wantAssertPassed: true,
+		},
+	}
+
+	t.Parallel()
+	for name, tc := range testCases {
+		tc := tc
+		t.Run(name, func(subT *testing.T) {
+			// given
+			assert := New(tc.givenT)
+
+			// when
+			assert(tc.got).IsFalse()
+
+			// then
+			gotAssertPassed := !tc.givenT.Failed()
+			if gotAssertPassed == tc.wantAssertPassed {
+				return
+			}
+			subT.Errorf("expected assert(%#v).IsFalse() to be %v, found %v", tc.got, tc.wantAssertPassed, gotAssertPassed)
+		})
+	}
+}

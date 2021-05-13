@@ -45,6 +45,14 @@ type comparator interface {
 	// IsNotNil checks whether the observed value is not nil. If nil, the function
 	// under test is marked as having failed.
 	IsNotNil()
+
+	// IsTrue asserts the observed value is true. Otherwise, the function
+	// under test is marked as having failed.
+	IsTrue()
+
+	// IsFalse asserts the observed value is false. Otherwise, the function
+	// under test is marked as having failed.
+	IsFalse()
 }
 
 func equals(got, want interface{}, errorf func(string, ...interface{})) bool {
@@ -193,4 +201,46 @@ func isList(list interface{}, errorf func(string, ...interface{})) bool {
 		return false
 	}
 	return true
+}
+
+func isTrue(got interface{}, errorf func(string, ...interface{})) {
+	if got == nil {
+		errorf("expected observed value to be true, found %v", got)
+		return
+	}
+
+	value := reflect.ValueOf(got)
+	kind := value.Kind()
+
+	if kind != reflect.Bool {
+		errorf("expected observed value to be true, found %v", got)
+		return
+	}
+
+	gotTrue := value.Bool()
+	if !gotTrue {
+		errorf("expected observed value to be true, found %v", got)
+		return
+	}
+}
+
+func isFalse(got interface{}, errorf func(string, ...interface{})) {
+	if got == nil {
+		errorf("expected observed value to be false, found %v", got)
+		return
+	}
+
+	value := reflect.ValueOf(got)
+	kind := value.Kind()
+
+	if kind != reflect.Bool {
+		errorf("expected observed value to be false, found %v", got)
+		return
+	}
+
+	gotTrue := value.Bool()
+	if gotTrue {
+		errorf("expected observed value to be false, found %v", got)
+		return
+	}
 }
