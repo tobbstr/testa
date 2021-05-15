@@ -112,14 +112,14 @@ func TestEquals(t *testing.T) {
 		tc := tc
 		t.Run(name, func(subT *testing.T) {
 			// given
-			givenT := &testing.T{}
-			assert := New(givenT)
+			dummyT := &testing.T{}
+			assert := New(dummyT)
 
 			// when
 			assert(tc.got).Equals(tc.want)
 
 			// then
-			gotAssertPassed := !givenT.Failed()
+			gotAssertPassed := !dummyT.Failed()
 			if gotAssertPassed == tc.wantAssertPassed {
 				return
 			}
@@ -133,175 +133,146 @@ func TestEqualsElementsInIgnoringOrder(t *testing.T) {
 		wantAssertPassed bool
 		want             interface{}
 		got              interface{}
-		givenT           *testing.T
 	}{
 		"should fail when get bool": {
 			wantAssertPassed: false,
 			want:             nonZero["slice"],
 			got:              nonZero["bool"],
-			givenT:           &testing.T{},
 		},
 		"should fail when get byte": {
 			wantAssertPassed: false,
 			want:             nonZero["slice"],
 			got:              nonZero["byte"],
-			givenT:           &testing.T{},
 		},
 		"should fail when get chan": {
 			wantAssertPassed: false,
 			want:             nonZero["slice"],
 			got:              nonZero["chan"],
-			givenT:           &testing.T{},
 		},
 		"should fail when get complex128": {
 			wantAssertPassed: false,
 			want:             nonZero["slice"],
 			got:              nonZero["complex128"],
-			givenT:           &testing.T{},
 		},
 		"should fail when get complex64": {
 			wantAssertPassed: false,
 			want:             nonZero["slice"],
 			got:              nonZero["complex64"],
-			givenT:           &testing.T{},
 		},
 		"should fail when get float32": {
 			wantAssertPassed: false,
 			want:             nonZero["slice"],
 			got:              nonZero["float32"],
-			givenT:           &testing.T{},
 		},
 		"should fail when get float64": {
 			wantAssertPassed: false,
 			want:             nonZero["slice"],
 			got:              nonZero["float64"],
-			givenT:           &testing.T{},
 		},
 		"should fail when get func": {
 			wantAssertPassed: false,
 			want:             nonZero["slice"],
 			got:              nonZero["func"],
-			givenT:           &testing.T{},
 		},
 		"should fail when get int": {
 			wantAssertPassed: false,
 			want:             nonZero["slice"],
 			got:              nonZero["int"],
-			givenT:           &testing.T{},
 		},
 		"should fail when get int8": {
 			wantAssertPassed: false,
 			want:             nonZero["slice"],
 			got:              nonZero["int8"],
-			givenT:           &testing.T{},
 		},
 		"should fail when get int16": {
 			wantAssertPassed: false,
 			want:             nonZero["slice"],
 			got:              nonZero["int16"],
-			givenT:           &testing.T{},
 		},
 		"should fail when get int32": {
 			wantAssertPassed: false,
 			want:             nonZero["slice"],
 			got:              nonZero["int32"],
-			givenT:           &testing.T{},
 		},
 		"should fail when get int64": {
 			wantAssertPassed: false,
 			want:             nonZero["slice"],
 			got:              nonZero["int64"],
-			givenT:           &testing.T{},
 		},
 		"should fail when get map": {
 			wantAssertPassed: false,
 			want:             nonZero["slice"],
 			got:              nonZero["map"],
-			givenT:           &testing.T{},
 		},
 		"should fail when get ptr": {
 			wantAssertPassed: false,
 			want:             nonZero["slice"],
 			got:              nonZero["ptr"],
-			givenT:           &testing.T{},
 		},
 		"should fail when get string": {
 			wantAssertPassed: false,
 			want:             nonZero["slice"],
 			got:              nonZero["string"],
-			givenT:           &testing.T{},
 		},
 		"should fail when get struct": {
 			wantAssertPassed: false,
 			want:             nonZero["slice"],
 			got:              nonZero["struct"],
-			givenT:           &testing.T{},
 		},
 		"should pass when want slice and get the same set of elements in order": {
 			wantAssertPassed: true,
 			want:             []string{"a", "b", "c"},
 			got:              []string{"a", "b", "c"},
-			givenT:           &testing.T{},
 		},
 		"should pass when want slice and get the same set of elements not in order": {
 			wantAssertPassed: true,
 			want:             []string{"a", "b", "c"},
 			got:              []string{"b", "c", "a"},
-			givenT:           &testing.T{},
 		},
 		"should fail when want slice but get subset not in order": {
 			wantAssertPassed: false,
 			want:             []string{"a", "b", "c"},
 			got:              []string{"c", "a"},
-			givenT:           &testing.T{},
 		},
 		"should fail when want slice but get subset in order": {
 			wantAssertPassed: false,
 			want:             []string{"a", "b", "c"},
 			got:              []string{"b", "c"},
-			givenT:           &testing.T{},
 		},
 		"should pass when want array and get the same set of elements in order": {
 			wantAssertPassed: true,
 			want:             [3]string{"a", "b", "c"},
 			got:              [3]string{"a", "b", "c"},
-			givenT:           &testing.T{},
 		},
 		"should pass when want array and get the same set of elements not in order": {
 			wantAssertPassed: true,
 			want:             [3]string{"a", "b", "c"},
 			got:              [3]string{"b", "c", "a"},
-			givenT:           &testing.T{},
 		},
 		"should fail when want array but get subset not in order": {
 			wantAssertPassed: false,
 			want:             [3]string{"a", "b", "c"},
 			got:              [2]string{"c", "a"},
-			givenT:           &testing.T{},
 		},
 		"should fail when want array but get subset in order": {
 			wantAssertPassed: false,
 			want:             [3]string{"a", "b", "c"},
 			got:              [2]string{"b", "c"},
-			givenT:           &testing.T{},
 		},
 		"should pass when want array but get slice with same set of elements": {
 			wantAssertPassed: true,
 			want:             [3]string{"a", "b", "c"},
 			got:              []string{"a", "b", "c"},
-			givenT:           &testing.T{},
 		},
 		"should pass when want slice but get array with same set of elements": {
 			wantAssertPassed: true,
 			want:             []string{"a", "b", "c"},
 			got:              [3]string{"a", "b", "c"},
-			givenT:           &testing.T{},
 		},
 		"should pass when want and get empty slice": {
 			wantAssertPassed: true,
 			want:             []string{},
 			got:              []string{},
-			givenT:           &testing.T{},
 		},
 	}
 
@@ -310,13 +281,14 @@ func TestEqualsElementsInIgnoringOrder(t *testing.T) {
 		tc := tc
 		t.Run(name, func(subT *testing.T) {
 			// given
-			assert := New(tc.givenT)
+			dummyT := &testing.T{}
+			assert := New(dummyT)
 
 			// when
 			assert(tc.got).EqualsElementsInIgnoringOrder(tc.want)
 
 			// then
-			gotAssertPassed := !tc.givenT.Failed()
+			gotAssertPassed := !dummyT.Failed()
 			if gotAssertPassed == tc.wantAssertPassed {
 				return
 			}
@@ -330,162 +302,130 @@ func TestIsEmpty(t *testing.T) {
 	nonEmptyChan <- 4
 	testcases := map[string]struct {
 		got              interface{}
-		givenT           *testing.T
 		wantAssertPassed bool
 	}{
 		"should pass when get empty array": {
 			got:              [0]int{},
-			givenT:           &testing.T{},
 			wantAssertPassed: true,
 		},
 		"should fail when get non-empty array": {
 			got:              zero["array"],
-			givenT:           &testing.T{},
 			wantAssertPassed: false,
 		},
 		"should pass when get zero-valued bool": {
 			got:              zero["bool"],
-			givenT:           &testing.T{},
 			wantAssertPassed: true,
 		},
 		"should fail when get true bool": {
 			got:              true,
-			givenT:           &testing.T{},
 			wantAssertPassed: false,
 		},
 		"should pass when get zero-valued byte": {
 			got:              zero["byte"],
-			givenT:           &testing.T{},
 			wantAssertPassed: true,
 		},
 		"should fail when get non-zero-valued byte": {
 			got:              nonZero["byte"],
-			givenT:           &testing.T{},
 			wantAssertPassed: false,
 		},
 		"should pass when get empty chan": {
 			got:              zero["chan"],
-			givenT:           &testing.T{},
 			wantAssertPassed: true,
 		},
 		"should fail when get non-empty chan": {
 			got:              nonEmptyChan,
-			givenT:           &testing.T{},
 			wantAssertPassed: false,
 		},
 		"should pass when get zero-valued complex64": {
 			got:              zero["complex64"],
-			givenT:           &testing.T{},
 			wantAssertPassed: true,
 		},
 		"should fail when get non-zero-valued complex64": {
 			got:              nonZero["complex64"],
-			givenT:           &testing.T{},
 			wantAssertPassed: false,
 		},
 		"should pass when get zero-valued complex128": {
 			got:              zero["complex128"],
-			givenT:           &testing.T{},
 			wantAssertPassed: true,
 		},
 		"should fail when get non-zero-valued complex128": {
 			got:              nonZero["complex128"],
-			givenT:           &testing.T{},
 			wantAssertPassed: false,
 		},
 		"should pass when get zero-valued float32": {
 			got:              zero["float32"],
-			givenT:           &testing.T{},
 			wantAssertPassed: true,
 		},
 		"should fail when get non-zero-valued float32": {
 			got:              nonZero["float32"],
-			givenT:           &testing.T{},
 			wantAssertPassed: false,
 		},
 		"should pass when get zero-valued func": {
 			got:              zero["func"],
-			givenT:           &testing.T{},
 			wantAssertPassed: true,
 		},
 		"should fail when get non-zero-valued func": {
 			got:              nonZero["func"],
-			givenT:           &testing.T{},
 			wantAssertPassed: false,
 		},
 		"should pass when get zero-valued int": {
 			got:              zero["int"],
-			givenT:           &testing.T{},
 			wantAssertPassed: true,
 		},
 		"should fail when get non-zero-valued int": {
 			got:              nonZero["int"],
-			givenT:           &testing.T{},
 			wantAssertPassed: false,
 		},
 		"should pass when get zero-valued interface": {
 			got:              zero["interface"],
-			givenT:           &testing.T{},
 			wantAssertPassed: true,
 		},
 		"should fail when get non-zero-valued interface": {
 			got:              nonZero["interface"],
-			givenT:           &testing.T{},
 			wantAssertPassed: false,
 		},
 		"should pass when get zero-valued map": {
 			got:              zero["map"],
-			givenT:           &testing.T{},
 			wantAssertPassed: true,
 		},
 		"should fail when get non-zero-valued map": {
 			got:              nonZero["map"],
-			givenT:           &testing.T{},
 			wantAssertPassed: false,
 		},
 		"should pass when get zero-valued ptr": {
 			got:              zero["ptr"],
-			givenT:           &testing.T{},
 			wantAssertPassed: true,
 		},
 		"should fail when get non-zero-valued ptr": {
 			got:              nonZero["ptr"],
-			givenT:           &testing.T{},
 			wantAssertPassed: false,
 		},
 		"should pass when get nil slice": {
 			got:              zero["slice"],
-			givenT:           &testing.T{},
 			wantAssertPassed: true,
 		},
 		"should pass when get empty slice": {
 			got:              []int{},
-			givenT:           &testing.T{},
 			wantAssertPassed: true,
 		},
 		"should fail when get non-zero-valued slice": {
 			got:              nonZero["slice"],
-			givenT:           &testing.T{},
 			wantAssertPassed: false,
 		},
 		"should pass when get zero-valued string": {
 			got:              zero["string"],
-			givenT:           &testing.T{},
 			wantAssertPassed: true,
 		},
 		"should fail when get non-zero-valued string": {
 			got:              nonZero["string"],
-			givenT:           &testing.T{},
 			wantAssertPassed: false,
 		},
 		"should pass when get zero-valued struct": {
 			got:              zero["struct"],
-			givenT:           &testing.T{},
 			wantAssertPassed: true,
 		},
 		"should fail when get non-zero-valued struct": {
 			got:              nonZero["struct"],
-			givenT:           &testing.T{},
 			wantAssertPassed: false,
 		},
 	}
@@ -495,13 +435,14 @@ func TestIsEmpty(t *testing.T) {
 		tc := tc
 		t.Run(name, func(subT *testing.T) {
 			// given
-			assert := New(tc.givenT)
+			dummyT := &testing.T{}
+			assert := New(dummyT)
 
 			// when
 			assert(tc.got).IsEmpty()
 
 			// then
-			gotAssertPassed := !tc.givenT.Failed()
+			gotAssertPassed := !dummyT.Failed()
 			if gotAssertPassed == tc.wantAssertPassed {
 				return
 			}
@@ -513,92 +454,74 @@ func TestIsEmpty(t *testing.T) {
 func TestIsFunction(t *testing.T) {
 	testCases := map[string]struct {
 		got              interface{}
-		givenT           *testing.T
 		wantAssertPassed bool
 	}{
 		"should fail when get array": {
 			got:              nonZero["array"],
-			givenT:           &testing.T{},
 			wantAssertPassed: false,
 		},
 		"should fail when get bool": {
 			got:              nonZero["bool"],
-			givenT:           &testing.T{},
 			wantAssertPassed: false,
 		},
 		"should fail when get byte": {
 			got:              nonZero["byte"],
-			givenT:           &testing.T{},
 			wantAssertPassed: false,
 		},
 		"should fail when get chan": {
 			got:              nonZero["chan"],
-			givenT:           &testing.T{},
 			wantAssertPassed: false,
 		},
 		"should fail when get complex64": {
 			got:              nonZero["complex64"],
-			givenT:           &testing.T{},
 			wantAssertPassed: false,
 		},
 		"should fail when get complex128": {
 			got:              nonZero["complex128"],
-			givenT:           &testing.T{},
 			wantAssertPassed: false,
 		},
 		"should fail when get float32": {
 			got:              nonZero["float32"],
-			givenT:           &testing.T{},
 			wantAssertPassed: false,
 		},
 		"should pass when get zero-valued func": {
 			got:              zero["func"],
-			givenT:           &testing.T{},
 			wantAssertPassed: true,
 		},
 		"should pass when get non-zero-valued func": {
 			got:              nonZero["func"],
-			givenT:           &testing.T{},
 			wantAssertPassed: true,
 		},
 		"should fail when get int": {
 			got:              nonZero["int"],
-			givenT:           &testing.T{},
 			wantAssertPassed: false,
 		},
 		"should fail when get interface": {
 			got:              nonZero["interface"],
-			givenT:           &testing.T{},
 			wantAssertPassed: false,
 		},
 		"should fail when get map": {
 			got:              nonZero["map"],
-			givenT:           &testing.T{},
 			wantAssertPassed: false,
 		},
 		"should fail when get ptr": {
 			got:              nonZero["ptr"],
-			givenT:           &testing.T{},
 			wantAssertPassed: false,
 		},
 		"should fail when get slice": {
 			got:              nonZero["slice"],
-			givenT:           &testing.T{},
 			wantAssertPassed: false,
 		},
 		"should fail when get string": {
 			got:              nonZero["string"],
-			givenT:           &testing.T{},
 			wantAssertPassed: false,
 		},
 		"should fail when get struct": {
 			got:              nonZero["struct"],
-			givenT:           &testing.T{},
 			wantAssertPassed: false,
 		},
 		"should fail when get nil": {
 			got:              nil,
-			givenT:           &testing.T{},
 			wantAssertPassed: false,
 		},
 	}
@@ -608,13 +531,14 @@ func TestIsFunction(t *testing.T) {
 		tc := tc
 		t.Run(name, func(subT *testing.T) {
 			// given
-			assert := New(tc.givenT)
+			dummyT := &testing.T{}
+			assert := New(dummyT)
 
 			// when
 			assert(tc.got).IsFunction()
 
 			// then
-			gotAssertPassed := !tc.givenT.Failed()
+			gotAssertPassed := !dummyT.Failed()
 			if gotAssertPassed == tc.wantAssertPassed {
 				return
 			}
@@ -626,72 +550,58 @@ func TestIsFunction(t *testing.T) {
 func TestIsNil(t *testing.T) {
 	testCases := map[string]struct {
 		got              interface{}
-		givenT           *testing.T
 		wantAssertPassed bool
 	}{
 		"should fail when get non-nilable": {
 			got:              nonZero["byte"],
-			givenT:           &testing.T{},
 			wantAssertPassed: false,
 		},
 		"should fail when get non-nil chan": {
 			got:              nonZero["chan"],
-			givenT:           &testing.T{},
 			wantAssertPassed: false,
 		},
 		"should pass when get nil chan": {
 			got:              zero["chan"],
-			givenT:           &testing.T{},
 			wantAssertPassed: true,
 		},
 		"should fail when get non-nil func": {
 			got:              nonZero["func"],
-			givenT:           &testing.T{},
 			wantAssertPassed: false,
 		},
 		"should pass when get nil func": {
 			got:              zero["func"],
-			givenT:           &testing.T{},
 			wantAssertPassed: true,
 		},
 		"should fail when get non-nil map": {
 			got:              nonZero["map"],
-			givenT:           &testing.T{},
 			wantAssertPassed: false,
 		},
 		"should pass when get nil map": {
 			got:              zero["map"],
-			givenT:           &testing.T{},
 			wantAssertPassed: true,
 		},
 		"should fail when get non-nil interface": {
 			got:              nonZero["interface"],
-			givenT:           &testing.T{},
 			wantAssertPassed: false,
 		},
 		"should pass when get nil interface": {
 			got:              zero["interface"],
-			givenT:           &testing.T{},
 			wantAssertPassed: true,
 		},
 		"should fail when get non-nil pointer": {
 			got:              nonZero["ptr"],
-			givenT:           &testing.T{},
 			wantAssertPassed: false,
 		},
 		"should pass when get nil pointer": {
 			got:              zero["ptr"],
-			givenT:           &testing.T{},
 			wantAssertPassed: true,
 		},
 		"should fail when get non-nil slice": {
 			got:              nonZero["slice"],
-			givenT:           &testing.T{},
 			wantAssertPassed: false,
 		},
 		"should pass when get nil slice": {
 			got:              zero["slice"],
-			givenT:           &testing.T{},
 			wantAssertPassed: true,
 		},
 	}
@@ -701,13 +611,14 @@ func TestIsNil(t *testing.T) {
 		tc := tc
 		t.Run(name, func(subT *testing.T) {
 			// given
-			assert := New(tc.givenT)
+			dummyT := &testing.T{}
+			assert := New(dummyT)
 
 			// when
 			assert(tc.got).IsNil()
 
 			// then
-			gotAssertPassed := !tc.givenT.Failed()
+			gotAssertPassed := !dummyT.Failed()
 			if gotAssertPassed == tc.wantAssertPassed {
 				return
 			}
@@ -721,162 +632,130 @@ func TestIsNotEmpty(t *testing.T) {
 	nonEmptyChan <- 4
 	testcases := map[string]struct {
 		got              interface{}
-		givenT           *testing.T
 		wantAssertPassed bool
 	}{
 		"should fail when get empty array": {
 			got:              [0]int{},
-			givenT:           &testing.T{},
 			wantAssertPassed: false,
 		},
 		"should pass when get non-empty array": {
 			got:              zero["array"],
-			givenT:           &testing.T{},
 			wantAssertPassed: true,
 		},
 		"should fail when get zero-valued bool": {
 			got:              zero["bool"],
-			givenT:           &testing.T{},
 			wantAssertPassed: false,
 		},
 		"should pass when get true bool": {
 			got:              true,
-			givenT:           &testing.T{},
 			wantAssertPassed: true,
 		},
 		"should fail when get zero-valued byte": {
 			got:              zero["byte"],
-			givenT:           &testing.T{},
 			wantAssertPassed: false,
 		},
 		"should pass when get non-zero-valued byte": {
 			got:              nonZero["byte"],
-			givenT:           &testing.T{},
 			wantAssertPassed: true,
 		},
 		"should fail when get empty chan": {
 			got:              zero["chan"],
-			givenT:           &testing.T{},
 			wantAssertPassed: false,
 		},
 		"should pass when get non-empty chan": {
 			got:              nonEmptyChan,
-			givenT:           &testing.T{},
 			wantAssertPassed: true,
 		},
 		"should fail when get zero-valued complex64": {
 			got:              zero["complex64"],
-			givenT:           &testing.T{},
 			wantAssertPassed: false,
 		},
 		"should pass when get non-zero-valued complex64": {
 			got:              nonZero["complex64"],
-			givenT:           &testing.T{},
 			wantAssertPassed: true,
 		},
 		"should fail when get zero-valued complex128": {
 			got:              zero["complex128"],
-			givenT:           &testing.T{},
 			wantAssertPassed: false,
 		},
 		"should pass when get non-zero-valued complex128": {
 			got:              nonZero["complex128"],
-			givenT:           &testing.T{},
 			wantAssertPassed: true,
 		},
 		"should fail when get zero-valued float32": {
 			got:              zero["float32"],
-			givenT:           &testing.T{},
 			wantAssertPassed: false,
 		},
 		"should pass when get non-zero-valued float32": {
 			got:              nonZero["float32"],
-			givenT:           &testing.T{},
 			wantAssertPassed: true,
 		},
 		"should fail when get zero-valued func": {
 			got:              zero["func"],
-			givenT:           &testing.T{},
 			wantAssertPassed: false,
 		},
 		"should pass when get non-zero-valued func": {
 			got:              nonZero["func"],
-			givenT:           &testing.T{},
 			wantAssertPassed: true,
 		},
 		"should fail when get zero-valued int": {
 			got:              zero["int"],
-			givenT:           &testing.T{},
 			wantAssertPassed: false,
 		},
 		"should pass when get non-zero-valued int": {
 			got:              nonZero["int"],
-			givenT:           &testing.T{},
 			wantAssertPassed: true,
 		},
 		"should fail when get zero-valued interface": {
 			got:              zero["interface"],
-			givenT:           &testing.T{},
 			wantAssertPassed: false,
 		},
 		"should pass when get non-zero-valued interface": {
 			got:              nonZero["interface"],
-			givenT:           &testing.T{},
 			wantAssertPassed: true,
 		},
 		"should fail when get zero-valued map": {
 			got:              zero["map"],
-			givenT:           &testing.T{},
 			wantAssertPassed: false,
 		},
 		"should pass when get non-zero-valued map": {
 			got:              nonZero["map"],
-			givenT:           &testing.T{},
 			wantAssertPassed: true,
 		},
 		"should fail when get zero-valued ptr": {
 			got:              zero["ptr"],
-			givenT:           &testing.T{},
 			wantAssertPassed: false,
 		},
 		"should pass when get non-zero-valued ptr": {
 			got:              nonZero["ptr"],
-			givenT:           &testing.T{},
 			wantAssertPassed: true,
 		},
 		"should fail when get nil slice": {
 			got:              zero["slice"],
-			givenT:           &testing.T{},
 			wantAssertPassed: false,
 		},
 		"should fail when get empty slice": {
 			got:              []int{},
-			givenT:           &testing.T{},
 			wantAssertPassed: false,
 		},
 		"should pass when get non-zero-valued slice": {
 			got:              nonZero["slice"],
-			givenT:           &testing.T{},
 			wantAssertPassed: true,
 		},
 		"should fail when get zero-valued string": {
 			got:              zero["string"],
-			givenT:           &testing.T{},
 			wantAssertPassed: false,
 		},
 		"should pass when get non-zero-valued string": {
 			got:              nonZero["string"],
-			givenT:           &testing.T{},
 			wantAssertPassed: true,
 		},
 		"should fail when get zero-valued struct": {
 			got:              zero["struct"],
-			givenT:           &testing.T{},
 			wantAssertPassed: false,
 		},
 		"should pass when get non-zero-valued struct": {
 			got:              nonZero["struct"],
-			givenT:           &testing.T{},
 			wantAssertPassed: true,
 		},
 	}
@@ -886,13 +765,14 @@ func TestIsNotEmpty(t *testing.T) {
 		tc := tc
 		t.Run(name, func(subT *testing.T) {
 			// given
-			assert := New(tc.givenT)
+			dummyT := &testing.T{}
+			assert := New(dummyT)
 
 			// when
 			assert(tc.got).IsNotEmpty()
 
 			// then
-			gotAssertPassed := !tc.givenT.Failed()
+			gotAssertPassed := !dummyT.Failed()
 			if gotAssertPassed == tc.wantAssertPassed {
 				return
 			}
@@ -904,72 +784,58 @@ func TestIsNotEmpty(t *testing.T) {
 func TestIsNotNil(t *testing.T) {
 	testCases := map[string]struct {
 		got              interface{}
-		givenT           *testing.T
 		wantAssertPassed bool
 	}{
 		"should pass when get non-nilable": {
 			got:              nonZero["int"],
-			givenT:           &testing.T{},
 			wantAssertPassed: true,
 		},
 		"should pass when get non-nil chan": {
 			got:              nonZero["chan"],
-			givenT:           &testing.T{},
 			wantAssertPassed: true,
 		},
 		"should fail when get nil chan": {
 			got:              zero["chan"],
-			givenT:           &testing.T{},
 			wantAssertPassed: false,
 		},
 		"should pass when get non-nil func": {
 			got:              nonZero["func"],
-			givenT:           &testing.T{},
 			wantAssertPassed: true,
 		},
 		"should fail when get nil func": {
 			got:              zero["func"],
-			givenT:           &testing.T{},
 			wantAssertPassed: false,
 		},
 		"should pass when get non-nil map": {
 			got:              nonZero["map"],
-			givenT:           &testing.T{},
 			wantAssertPassed: true,
 		},
 		"should fail when get nil map": {
 			got:              zero["map"],
-			givenT:           &testing.T{},
 			wantAssertPassed: false,
 		},
 		"should pass when get non-nil interface": {
 			got:              nonZero["interface"],
-			givenT:           &testing.T{},
 			wantAssertPassed: true,
 		},
 		"should fail when get nil interface": {
 			got:              zero["interface"],
-			givenT:           &testing.T{},
 			wantAssertPassed: false,
 		},
 		"should pass when get non-nil pointer": {
 			got:              nonZero["ptr"],
-			givenT:           &testing.T{},
 			wantAssertPassed: true,
 		},
 		"should fail when get nil pointer": {
 			got:              zero["ptr"],
-			givenT:           &testing.T{},
 			wantAssertPassed: false,
 		},
 		"should pass when get non-nil slice": {
 			got:              nonZero["slice"],
-			givenT:           &testing.T{},
 			wantAssertPassed: true,
 		},
 		"should fail when get nil slice": {
 			got:              zero["slice"],
-			givenT:           &testing.T{},
 			wantAssertPassed: false,
 		},
 	}
@@ -979,13 +845,14 @@ func TestIsNotNil(t *testing.T) {
 		tc := tc
 		t.Run(name, func(subT *testing.T) {
 			// given
-			assert := New(tc.givenT)
+			dummyT := &testing.T{}
+			assert := New(dummyT)
 
 			// when
 			assert(tc.got).IsNotNil()
 
 			// then
-			gotAssertPassed := !tc.givenT.Failed()
+			gotAssertPassed := !dummyT.Failed()
 			if gotAssertPassed == tc.wantAssertPassed {
 				return
 			}
@@ -997,27 +864,22 @@ func TestIsNotNil(t *testing.T) {
 func TestIsTrue(t *testing.T) {
 	testCases := map[string]struct {
 		got              interface{}
-		givenT           *testing.T
 		wantAssertPassed bool
 	}{
 		"should fail when get nil": {
 			got:              nil,
-			givenT:           &testing.T{},
 			wantAssertPassed: false,
 		},
 		"should fail when get non-bool": {
 			got:              nonZero["int"],
-			givenT:           &testing.T{},
 			wantAssertPassed: false,
 		},
 		"should pass when get true bool": {
 			got:              nonZero["bool"],
-			givenT:           &testing.T{},
 			wantAssertPassed: true,
 		},
 		"should fail when get false bool": {
 			got:              zero["bool"],
-			givenT:           &testing.T{},
 			wantAssertPassed: false,
 		},
 	}
@@ -1027,13 +889,14 @@ func TestIsTrue(t *testing.T) {
 		tc := tc
 		t.Run(name, func(subT *testing.T) {
 			// given
-			assert := New(tc.givenT)
+			dummyT := &testing.T{}
+			assert := New(dummyT)
 
 			// when
 			assert(tc.got).IsTrue()
 
 			// then
-			gotAssertPassed := !tc.givenT.Failed()
+			gotAssertPassed := !dummyT.Failed()
 			if gotAssertPassed == tc.wantAssertPassed {
 				return
 			}
@@ -1045,27 +908,22 @@ func TestIsTrue(t *testing.T) {
 func TestIsFalse(t *testing.T) {
 	testCases := map[string]struct {
 		got              interface{}
-		givenT           *testing.T
 		wantAssertPassed bool
 	}{
 		"should fail when get nil": {
 			got:              nil,
-			givenT:           &testing.T{},
 			wantAssertPassed: false,
 		},
 		"should fail when get non-bool": {
 			got:              nonZero["int"],
-			givenT:           &testing.T{},
 			wantAssertPassed: false,
 		},
 		"should fail when get true bool": {
 			got:              nonZero["bool"],
-			givenT:           &testing.T{},
 			wantAssertPassed: false,
 		},
 		"should pass when get false bool": {
 			got:              zero["bool"],
-			givenT:           &testing.T{},
 			wantAssertPassed: true,
 		},
 	}
@@ -1075,13 +933,14 @@ func TestIsFalse(t *testing.T) {
 		tc := tc
 		t.Run(name, func(subT *testing.T) {
 			// given
-			assert := New(tc.givenT)
+			dummyT := &testing.T{}
+			assert := New(dummyT)
 
 			// when
 			assert(tc.got).IsFalse()
 
 			// then
-			gotAssertPassed := !tc.givenT.Failed()
+			gotAssertPassed := !dummyT.Failed()
 			if gotAssertPassed == tc.wantAssertPassed {
 				return
 			}
