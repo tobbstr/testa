@@ -28,7 +28,9 @@ func (f fatalComparator) IsFunction() {
 }
 
 func (f fatalComparator) IsNil() {
-	isNil(f.got, f.t.Fatalf)
+	if !isNil(f.got) {
+		f.t.Errorf("expected the observed value to be nil, found %#v", f.got)
+	}
 }
 
 func (f fatalComparator) IsNotEmpty() {
