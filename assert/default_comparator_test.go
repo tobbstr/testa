@@ -1089,3 +1089,57 @@ func TestIsFalse(t *testing.T) {
 		})
 	}
 }
+
+func TestPointsToSameAddressAs(t *testing.T) {
+	testCases := map[string]struct {
+		got              interface{}
+		want             interface{}
+		wantAssertPassed bool
+	}{
+		"should fail when get nil": {
+			got:              nil,
+			want:             nonZero["ptr"],
+			wantAssertPassed: false,
+		},
+		"should fail when want nil": {
+			got:              nonZero["ptr"],
+			want:             nil,
+			wantAssertPassed: false,
+		},
+		"should fail when get non-pointer": {
+			got:              nonZero["string"],
+			want:             &struct{}{},
+			wantAssertPassed: false,
+		},
+		"should fail when get pointer that points to another address": {
+			got:              nonZero["ptr"],
+			want:             &struct{}{},
+			wantAssertPassed: false,
+		},
+		"should pass when want and get pointer that points to same address": {
+			got:              nonZero["ptr"],
+			want:             nonZero["ptr"],
+			wantAssertPassed: true,
+		},
+	}
+
+	t.Parallel()
+	for name, tc := range testCases {
+		tc := tc
+		t.Run(name, func(t *testing.T) {
+			// given
+			dummyT := &testing.T{}
+			assert := New(dummyT)
+
+			// when
+			assert(tc.got).PointsToSameAddressAs(tc.want)
+
+			// then
+			gotAssertPassed := !dummyT.Failed()
+			if gotAssertPassed == tc.wantAssertPassed {
+				return
+			}
+			t.Errorf("expected assert(%p).PointsToSameAddressAs(%p) to be %v, found %v", tc.got, tc.want, tc.wantAssertPassed, gotAssertPassed)
+		})
+	}
+}

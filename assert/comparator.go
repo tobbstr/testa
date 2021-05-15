@@ -12,13 +12,13 @@ var nilableKinds []reflect.Kind = []reflect.Kind{
 }
 
 type comparator interface {
-	// Equals asserts the 'want' argument (expected value) is equal to the observed.
+	// Equals asserts the observed value equals the 'want' argument (expected value).
 	// They are considered equal if both are nil or if they're deeply equal according to
 	// reflect.DeepEqual's definition of equal.
 	Equals(want interface{}) bool
 
-	// EqualsElementsInIgnoringOrder asserts the 'want' argument (expected value) is equal to
-	// the observed, ignoring order. Valid types for comparison are slices and arrays, but it's
+	// EqualsElementsInIgnoringOrder asserts the observed value is equal to the 'want' argument
+	// (expected value), ignoring order. Valid types for comparison are slices and arrays, but it's
 	// also valid to compare slices with arrays and vice versa. Comparing other types or if the
 	// values being compared are not equal, the function under test is marked as having failed.
 	// Two sequences of elements are equal if their number of elements are the
@@ -55,6 +55,12 @@ type comparator interface {
 	// IsTrue asserts the observed value is true. Otherwise, the function
 	// under test is marked as having failed.
 	IsTrue()
+
+	// PointsToSameAddressAs asserts the observed pointer points to the same memory address as
+	// the 'want' pointer. Both the observed and want values must be pointers. If not, or if
+	// the pointers don't point to the same memory address, the function under test is marked
+	// as having failed.
+	PointsToSameAddressAs(want interface{})
 }
 
 func equals(got, want interface{}, errorf func(string, ...interface{})) bool {
@@ -244,5 +250,24 @@ func isFalse(got interface{}, errorf func(string, ...interface{})) {
 	if gotTrue {
 		errorf("expected observed value to be false, found %v", got)
 		return
+	}
+}
+
+func pointsToSameAddressAs(got, want interface{}, errorf func(string, ...interface{})) {
+	if got == nil || want == nil {
+		errorf("expected both 'got' and 'want' to be non-nil values, found got %v and want %v", got, want)
+		return
+	}
+
+	gotKind := reflect.ValueOf(got).Kind()
+	wantKind := reflect.ValueOf(want).Kind()
+
+	if gotKind != reflect.Ptr || wantKind != reflect.Ptr {
+		errorf("expected both 'got' and 'want' to be pointers, found got %v and want %v", got, want)
+		return
+	}
+
+	if got != want {
+		errorf("expected 'want' to point to same memory address as the observed value, found got %v and want %v", got, want)
 	}
 }
