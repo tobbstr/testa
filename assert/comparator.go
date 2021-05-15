@@ -96,9 +96,9 @@ func isFunc(arg interface{}) bool {
 	return reflect.TypeOf(arg).Kind() == reflect.Func
 }
 
-func isNil(got interface{}, errorf func(string, ...interface{})) {
+func isNil(got interface{}) bool {
 	if got == nil {
-		return
+		return true
 	}
 	value := reflect.ValueOf(got)
 	kind := value.Kind()
@@ -106,12 +106,12 @@ func isNil(got interface{}, errorf func(string, ...interface{})) {
 	for _, nilableKind := range nilableKinds {
 		if kind == nilableKind {
 			if value.IsNil() {
-				return
+				return true
 			}
 			break
 		}
 	}
-	errorf("expected nil value, found %+v", got)
+	return false
 }
 
 func isNotEmpty(got interface{}, errorf func(string, ...interface{})) {

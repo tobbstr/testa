@@ -28,7 +28,9 @@ func (d defaultComparator) IsFunction() {
 }
 
 func (d defaultComparator) IsNil() {
-	isNil(d.got, d.t.Errorf)
+	if !isNil(d.got) {
+		d.t.Errorf("expected the observed value to be nil, found %#v", d.got)
+	}
 }
 
 func (d defaultComparator) IsNotEmpty() {
