@@ -7,8 +7,15 @@ type defaultComparator struct {
 	got interface{}
 }
 
-func (d defaultComparator) Equals(want interface{}) bool {
-	return equals(d.got, want, d.t.Errorf)
+func (d defaultComparator) Equals(want interface{}) {
+	if err := validateArgsForEqualsFn(d.got, want); err != nil {
+		d.t.Errorf("validation of args for equals function failed: %v", err)
+		return
+	}
+	if !equals(d.got, want) {
+		d.t.Errorf("expected assert(%#v).Equals(%#v) to be true, found false", d.got, want)
+		return
+	}
 }
 
 func (d defaultComparator) IgnoringOrderEqualsElementsIn(want interface{}) {
@@ -51,4 +58,15 @@ func (d defaultComparator) IsFalse() {
 
 func (d defaultComparator) IsPointerWithSameAddressAs(want interface{}) {
 	isPointerWithSameAddressAs(d.got, want, d.t.Errorf)
+}
+
+func (d defaultComparator) NotEquals(want interface{}) {
+	if err := validateArgsForEqualsFn(d.got, want); err != nil {
+		d.t.Errorf("validation of args for equals function failed: %v", err)
+		return
+	}
+	if equals(d.got, want) {
+		d.t.Errorf("expected assert(%#v).NotEquals(%#v) to be true, found false", d.got, want)
+		return
+	}
 }

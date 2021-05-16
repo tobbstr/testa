@@ -7,8 +7,15 @@ type fatalComparator struct {
 	got interface{}
 }
 
-func (f fatalComparator) Equals(want interface{}) bool {
-	return equals(f.got, want, f.t.Fatalf)
+func (f fatalComparator) Equals(want interface{}) {
+	if err := validateArgsForEqualsFn(f.got, want); err != nil {
+		f.t.Fatalf("validation of args for equals function failed: %v", err)
+		return
+	}
+	if !equals(f.got, want) {
+		f.t.Fatalf("expected assert(%#v).Equals(%#v) to be true, found false", f.got, want)
+		return
+	}
 }
 
 func (f fatalComparator) IgnoringOrderEqualsElementsIn(want interface{}) {
@@ -51,4 +58,15 @@ func (f fatalComparator) IsFalse() {
 
 func (f fatalComparator) IsPointerWithSameAddressAs(want interface{}) {
 	isPointerWithSameAddressAs(f.got, want, f.t.Fatalf)
+}
+
+func (f fatalComparator) NotEquals(want interface{}) {
+	if err := validateArgsForEqualsFn(f.got, want); err != nil {
+		f.t.Fatalf("validation of args for equals function failed: %v", err)
+		return
+	}
+	if equals(f.got, want) {
+		f.t.Fatalf("expected assert(%#v).NotEquals(%#v) to be true, found false", f.got, want)
+		return
+	}
 }

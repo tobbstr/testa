@@ -1002,3 +1002,68 @@ func TestIsPointerWithSameAddressAs(t *testing.T) {
 		})
 	}
 }
+
+func TestNotEquals(t *testing.T) {
+	// given
+	testCases := map[string]struct {
+		got              interface{}
+		want             interface{}
+		wantAssertPassed bool
+	}{
+		"should fail for identical nil args": {
+			got:              nil,
+			want:             nil,
+			wantAssertPassed: false,
+		},
+		"should fail for equal comparable non-nil args": {
+			got:              nonZero["int"],
+			want:             nonZero["int"],
+			wantAssertPassed: false,
+		},
+		"should pass when want non-nil, but get nil": {
+			got:              nil,
+			want:             nonZero["int"],
+			wantAssertPassed: true,
+		},
+		"should pass when want nil, but get comparable non-nil": {
+			got:              nonZero["struct"],
+			want:             nil,
+			wantAssertPassed: true,
+		},
+		"should fail when want comparable non-nil, but get non-comparable func": {
+			got:              nonZero["func"],
+			want:             nonZero["int"],
+			wantAssertPassed: false,
+		},
+		"should fail when want non-comparable func, but get comparable non-nil": {
+			got:              nonZero["string"],
+			want:             func() {},
+			wantAssertPassed: false,
+		},
+		"should pass for unequal comparable non-nil args": {
+			got:              nonZero["int"],
+			want:             nonZero["string"],
+			wantAssertPassed: true,
+		},
+	}
+
+	t.Parallel()
+	for name, tc := range testCases {
+		tc := tc
+		t.Run(name, func(subT *testing.T) {
+			// given
+			dummyT := &testing.T{}
+			assert := New(dummyT)
+
+			// when
+			assert(tc.got).NotEquals(tc.want)
+
+			// then
+			gotAssertPassed := !dummyT.Failed()
+			if gotAssertPassed == tc.wantAssertPassed {
+				return
+			}
+			subT.Errorf("expected assert(%#v).NotEquals(%#v) to be %v, found %v", tc.got, tc.want, tc.wantAssertPassed, gotAssertPassed)
+		})
+	}
+}
