@@ -949,7 +949,7 @@ func TestIsFalse(t *testing.T) {
 	}
 }
 
-func TestPointsToSameAddressAs(t *testing.T) {
+func TestIsPointerWithSameAddressAs(t *testing.T) {
 	testCases := map[string]struct {
 		got              interface{}
 		want             interface{}
@@ -991,14 +991,14 @@ func TestPointsToSameAddressAs(t *testing.T) {
 			assert := New(dummyT)
 
 			// when
-			assert(tc.got).PointsToSameAddressAs(tc.want)
+			assert(tc.got).IsPointerWithSameAddressAs(tc.want)
 
 			// then
 			gotAssertPassed := !dummyT.Failed()
 			if gotAssertPassed == tc.wantAssertPassed {
 				return
 			}
-			t.Errorf("expected assert(%p).PointsToSameAddressAs(%p) to be %v, found %v", tc.got, tc.want, tc.wantAssertPassed, gotAssertPassed)
+			t.Errorf("expected assert(%p).IsPointerWithSameAddressAs(%p) to be %v, found %v", tc.got, tc.want, tc.wantAssertPassed, gotAssertPassed)
 		})
 	}
 }
