@@ -15,7 +15,7 @@ type comparator interface {
 	// Equals asserts the observed value equals the 'want' argument (expected value).
 	// They are considered equal if both are nil or if they're deeply equal according to
 	// reflect.DeepEqual's definition of equal.
-	Equals(want interface{}) bool
+	Equals(want interface{})
 
 	// IgnoringOrderEqualsElementsIn asserts the observed value is equal to the 'want' argument
 	// (expected value), ignoring order. Valid types for comparison are slices and arrays, but it's
@@ -61,25 +61,23 @@ type comparator interface {
 	// the pointers don't point to the same memory address, the function under test is marked
 	// as having failed.
 	IsPointerWithSameAddressAs(want interface{})
+
+	// NotEquals asserts the observed value is not equal to the 'want' argument. It performs the
+	// same comparison as the Equals method, but inverts the result. If they are equal, the function
+	// under test is marked as having failed.
+	NotEquals(want interface{})
 }
 
-func equals(got, want interface{}, errorf func(string, ...interface{})) bool {
-	if err := validateArgsForEqualsFn(got, want); err != nil {
-		errorf("validation of args for Equal method failed: %v", err)
-		return false
-	}
-
+func equals(got, want interface{}) bool {
 	if got == nil && want == nil {
 		return true
 	}
 
 	if got == nil || want == nil {
-		errorf("Error: got %v, expected: %v", got, want)
 		return false
 	}
 
 	if !reflect.DeepEqual(got, want) {
-		errorf("Error: got %v, expected: %v", got, want)
 		return false
 	}
 	return true
