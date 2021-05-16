@@ -56,11 +56,11 @@ type comparator interface {
 	// under test is marked as having failed.
 	IsTrue()
 
-	// PointsToSameAddressAs asserts the observed pointer points to the same memory address as
+	// IsPointerWithSameAddressAs asserts the observed pointer points to the same memory address as
 	// the 'want' pointer. Both the observed and want values must be pointers. If not, or if
 	// the pointers don't point to the same memory address, the function under test is marked
 	// as having failed.
-	PointsToSameAddressAs(want interface{})
+	IsPointerWithSameAddressAs(want interface{})
 }
 
 func equals(got, want interface{}, errorf func(string, ...interface{})) bool {
@@ -253,7 +253,7 @@ func isFalse(got interface{}, errorf func(string, ...interface{})) {
 	}
 }
 
-func pointsToSameAddressAs(got, want interface{}, errorf func(string, ...interface{})) {
+func isPointerWithSameAddressAs(got, want interface{}, errorf func(string, ...interface{})) {
 	if got == nil || want == nil {
 		errorf("expected both 'got' and 'want' to be non-nil values, found got %v and want %v", got, want)
 		return

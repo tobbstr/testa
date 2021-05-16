@@ -49,6 +49,6 @@ func (f fatalComparator) IsFalse() {
 	isFalse(f.got, f.t.Fatalf)
 }
 
-func (f fatalComparator) PointsToSameAddressAs(want interface{}) {
-	pointsToSameAddressAs(f.got, want, f.t.Fatalf)
+func (f fatalComparator) IsPointerWithSameAddressAs(want interface{}) {
+	isPointerWithSameAddressAs(f.got, want, f.t.Fatalf)
 }

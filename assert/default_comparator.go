@@ -49,6 +49,6 @@ func (d defaultComparator) IsFalse() {
 	isFalse(d.got, d.t.Errorf)
 }
 
-func (d defaultComparator) PointsToSameAddressAs(want interface{}) {
-	pointsToSameAddressAs(d.got, want, d.t.Errorf)
+func (d defaultComparator) IsPointerWithSameAddressAs(want interface{}) {
+	isPointerWithSameAddressAs(d.got, want, d.t.Errorf)
 }
