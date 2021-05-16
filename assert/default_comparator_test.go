@@ -128,7 +128,7 @@ func TestEquals(t *testing.T) {
 	}
 }
 
-func TestEqualsElementsInIgnoringOrder(t *testing.T) {
+func TestIgnoringOrderEqualsElementsIn(t *testing.T) {
 	testCases := map[string]struct {
 		wantAssertPassed bool
 		want             interface{}
@@ -285,14 +285,14 @@ func TestEqualsElementsInIgnoringOrder(t *testing.T) {
 			assert := New(dummyT)
 
 			// when
-			assert(tc.got).EqualsElementsInIgnoringOrder(tc.want)
+			assert(tc.got).IgnoringOrderEqualsElementsIn(tc.want)
 
 			// then
 			gotAssertPassed := !dummyT.Failed()
 			if gotAssertPassed == tc.wantAssertPassed {
 				return
 			}
-			subT.Errorf("expected assert(%#v).EqualsElementsInIgnoringOrder(%#v) to be %v, found %v", tc.got, tc.want, tc.wantAssertPassed, gotAssertPassed)
+			subT.Errorf("expected assert(%#v).IgnoringOrderEqualsElementsIn(%#v) to be %v, found %v", tc.got, tc.want, tc.wantAssertPassed, gotAssertPassed)
 		})
 	}
 }

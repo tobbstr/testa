@@ -11,8 +11,8 @@ func (f fatalComparator) Equals(want interface{}) bool {
 	return equals(f.got, want, f.t.Fatalf)
 }
 
-func (f fatalComparator) EqualsElementsInIgnoringOrder(want interface{}) {
-	equalElementsIgnoringOrder(f.got, want, f.t.Fatalf)
+func (f fatalComparator) IgnoringOrderEqualsElementsIn(want interface{}) {
+	ignoringOrderEqualsElementsIn(f.got, want, f.t.Fatalf)
 }
 
 func (f fatalComparator) IsEmpty() {
