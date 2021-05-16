@@ -17,13 +17,13 @@ type comparator interface {
 	// reflect.DeepEqual's definition of equal.
 	Equals(want interface{}) bool
 
-	// EqualsElementsInIgnoringOrder asserts the observed value is equal to the 'want' argument
+	// IgnoringOrderEqualsElementsIn asserts the observed value is equal to the 'want' argument
 	// (expected value), ignoring order. Valid types for comparison are slices and arrays, but it's
 	// also valid to compare slices with arrays and vice versa. Comparing other types or if the
 	// values being compared are not equal, the function under test is marked as having failed.
 	// Two sequences of elements are equal if their number of elements are the
 	// same, and if their elements are equal ignoring order.
-	EqualsElementsInIgnoringOrder(want interface{})
+	IgnoringOrderEqualsElementsIn(want interface{})
 
 	// IsEmpty asserts the observed value is empty. If not empty, the function under test is
 	// marked as having failed.
@@ -144,7 +144,7 @@ func isNotNil(got interface{}, errorf func(string, ...interface{})) {
 	}
 }
 
-func equalElementsIgnoringOrder(got interface{}, want interface{}, errorf func(string, ...interface{})) {
+func ignoringOrderEqualsElementsIn(got interface{}, want interface{}, errorf func(string, ...interface{})) {
 	if !isList(got, errorf) || !isList(want, errorf) {
 		return
 	}

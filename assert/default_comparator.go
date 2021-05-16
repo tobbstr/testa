@@ -11,8 +11,8 @@ func (d defaultComparator) Equals(want interface{}) bool {
 	return equals(d.got, want, d.t.Errorf)
 }
 
-func (d defaultComparator) EqualsElementsInIgnoringOrder(want interface{}) {
-	equalElementsIgnoringOrder(d.got, want, d.t.Errorf)
+func (d defaultComparator) IgnoringOrderEqualsElementsIn(want interface{}) {
+	ignoringOrderEqualsElementsIn(d.got, want, d.t.Errorf)
 }
 
 func (d defaultComparator) IsEmpty() {
