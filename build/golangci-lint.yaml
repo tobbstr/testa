@@ -25,12 +25,12 @@ linters:
     - misspell
     - nakedret
     - prealloc
-    - scopelint
+    - exportloopref # replaces scopelint
     - stylecheck
     - unconvert
     - unparam
     - gosec
-    - golint
+    - revive # replaces golint
   disable:
     - gochecknoglobals
     - lll
@@ -43,7 +43,7 @@ issues:
   exclude-rules: 
     - path: _test\.go
       linters:
-        - scopelint
+        - dupl
 
 run:
   modules-download-mode: vendor
