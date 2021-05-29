@@ -1,0 +1,13 @@
+name: Continuous Integration
+
+on: [pull_request]
+
+jobs:
+  static-code-analysis:
+    name: runner / golangci-lint
+    runs-on: ubuntu-latest
+    steps:
+      - name: Check out code into the Go module directory
+        uses: actions/checkout@v2
+      - name: golangci-lint
+        uses: reviewdog/action-golangci-lint@v1
