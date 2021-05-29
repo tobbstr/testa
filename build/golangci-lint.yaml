@@ -1,0 +1,49 @@
+linters:
+  enable:
+    # default
+    - deadcode
+    - errcheck
+    - gosimple
+    - govet
+    - ineffassign
+    - staticcheck
+    - structcheck
+    - typecheck
+    - unused
+    - varcheck
+    # custom
+    - depguard
+    - dupl
+    - gochecknoinits
+    - goconst
+    - gocritic
+    - gocyclo
+    - gofmt
+    - goimports
+    - interfacer
+    - maligned
+    - misspell
+    - nakedret
+    - prealloc
+    - scopelint
+    - stylecheck
+    - unconvert
+    - unparam
+    - gosec
+    - golint
+  disable:
+    - gochecknoglobals
+    - lll
+
+linters-settings:
+  errcheck:
+    ignore: fmt:.*
+
+issues:
+  exclude-rules: 
+    - path: _test\.go
+      linters:
+        - scopelint
+
+run:
+  modules-download-mode: vendor
