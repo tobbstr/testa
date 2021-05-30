@@ -7,7 +7,7 @@ import (
 )
 
 // nilabe types
-var nilableKinds []reflect.Kind = []reflect.Kind{
+var nilableKinds = []reflect.Kind{
 	reflect.Chan, reflect.Func, reflect.Map,
 	reflect.Interface, reflect.Ptr, reflect.Slice,
 }
@@ -108,11 +108,11 @@ func ignoringOrderEqualsElementsIn(got interface{}, want interface{}, errorf fun
 
 	for w := 0; w < wantElemSequenceLen; w++ {
 		wantElem := wantElemSequence.Index(w).Interface()
-		wantElemCountFor[wantElem] = wantElemCountFor[wantElem] + 1
+		wantElemCountFor[wantElem]++
 		for g := 0; g < gotElemSequenceLen; g++ {
 			gotElem := gotElemSequence.Index(g).Interface()
 			if reflect.DeepEqual(wantElem, gotElem) {
-				matchingElemCountFor[gotElem] = matchingElemCountFor[gotElem] + 1
+				matchingElemCountFor[gotElem]++
 			}
 		}
 	}
@@ -128,7 +128,7 @@ func ignoringOrderEqualsElementsIn(got interface{}, want interface{}, errorf fun
 func isList(list interface{}, errorf func(string, ...interface{})) bool {
 	kind := reflect.ValueOf(list).Kind()
 	if kind != reflect.Array && kind != reflect.Slice {
-		//fmt.Printf("unsupported argument type for 'list', got %s expected array or slice\n", kind)
+		// fmt.Printf("unsupported argument type for 'list', got %s expected array or slice\n", kind)
 		errorf("unsupported argument type for 'list', expected array or slice, found %s", kind)
 		return false
 	}
