@@ -1067,3 +1067,215 @@ func TestNotEquals(t *testing.T) {
 		})
 	}
 }
+
+func TestIsJSONEqualTo(t *testing.T) {
+	validJSONObjectAsString := `{"dummy-field": "dummy-value"}`
+	validJSONObjectAsByteSlice := []byte(validJSONObjectAsString)
+	testCases := []struct {
+		name             string
+		got              interface{}
+		want             interface{}
+		wantAssertPassed bool
+	}{
+		{
+			name:             "should pass when want and get same valid JSON object as string",
+			got:              validJSONObjectAsString,
+			want:             validJSONObjectAsString,
+			wantAssertPassed: true,
+		},
+		{
+			name:             "should pass when want and get same valid JSON object as byte slices",
+			got:              validJSONObjectAsByteSlice,
+			want:             validJSONObjectAsByteSlice,
+			wantAssertPassed: true,
+		},
+		{
+			name:             "should pass when want same valid JSON object as byte slice, but get it as string",
+			got:              validJSONObjectAsString,
+			want:             validJSONObjectAsByteSlice,
+			wantAssertPassed: true,
+		},
+		{
+			name:             "should pass when want same valid JSON object as string, but get it as byte slice",
+			got:              validJSONObjectAsByteSlice,
+			want:             validJSONObjectAsString,
+			wantAssertPassed: true,
+		},
+		{
+			name:             "should fail when want valid JSON object, but get array",
+			got:              nonZero["array"],
+			want:             validJSONObjectAsString,
+			wantAssertPassed: false,
+		},
+		{
+			name:             "should fail when want valid JSON object, but get bool",
+			got:              nonZero["bool"],
+			want:             validJSONObjectAsString,
+			wantAssertPassed: false,
+		},
+		{
+			name:             "should fail when want valid JSON object, but get byte",
+			got:              nonZero["byte"],
+			want:             validJSONObjectAsString,
+			wantAssertPassed: false,
+		},
+		{
+			name:             "should fail when want valid JSON object, but get chan",
+			got:              nonZero["chan"],
+			want:             validJSONObjectAsString,
+			wantAssertPassed: false,
+		},
+		{
+			name:             "should fail when want valid JSON object, but get complex64",
+			got:              nonZero["complex64"],
+			want:             validJSONObjectAsString,
+			wantAssertPassed: false,
+		},
+		{
+			name:             "should fail when want valid JSON object, but get complex128",
+			got:              nonZero["complex128"],
+			want:             validJSONObjectAsString,
+			wantAssertPassed: false,
+		},
+		{
+			name:             "should fail when want valid JSON object, but get float32",
+			got:              nonZero["float32"],
+			want:             validJSONObjectAsString,
+			wantAssertPassed: false,
+		},
+		{
+			name:             "should fail when want valid JSON object, but get float64",
+			got:              nonZero["float64"],
+			want:             validJSONObjectAsString,
+			wantAssertPassed: false,
+		},
+		{
+			name:             "should fail when want valid JSON object, but get func",
+			got:              nonZero["func"],
+			want:             validJSONObjectAsString,
+			wantAssertPassed: false,
+		},
+		{
+			name:             "should fail when want valid JSON object, but get int",
+			got:              nonZero["int"],
+			want:             validJSONObjectAsString,
+			wantAssertPassed: false,
+		},
+		{
+			name:             "should fail when want valid JSON object, but get int8",
+			got:              nonZero["int8"],
+			want:             validJSONObjectAsString,
+			wantAssertPassed: false,
+		},
+		{
+			name:             "should fail when want valid JSON object, but get int16",
+			got:              nonZero["int16"],
+			want:             validJSONObjectAsString,
+			wantAssertPassed: false,
+		},
+		{
+			name:             "should fail when want valid JSON object, but get int32",
+			got:              nonZero["int32"],
+			want:             validJSONObjectAsString,
+			wantAssertPassed: false,
+		},
+		{
+			name:             "should fail when want valid JSON object, but get int64",
+			got:              nonZero["int64"],
+			want:             validJSONObjectAsString,
+			wantAssertPassed: false,
+		},
+		{
+			name:             "should fail when want valid JSON object, but get interface",
+			got:              nonZero["interface"],
+			want:             validJSONObjectAsString,
+			wantAssertPassed: false,
+		},
+		{
+			name:             "should fail when want valid JSON object, but get map",
+			got:              nonZero["map"],
+			want:             validJSONObjectAsString,
+			wantAssertPassed: false,
+		},
+		{
+			name:             "should fail when want valid JSON object, but get ptr",
+			got:              nonZero["ptr"],
+			want:             validJSONObjectAsString,
+			wantAssertPassed: false,
+		},
+		{
+			name:             "should fail when want valid JSON object, but get rune",
+			got:              nonZero["rune"],
+			want:             validJSONObjectAsString,
+			wantAssertPassed: false,
+		},
+		{
+			name:             "should fail when want valid JSON object, but get slice",
+			got:              nonZero["slice"],
+			want:             validJSONObjectAsString,
+			wantAssertPassed: false,
+		},
+		{
+			name:             "should fail when want valid JSON object, but get string",
+			got:              nonZero["string"],
+			want:             validJSONObjectAsString,
+			wantAssertPassed: false,
+		},
+		{
+			name:             "should fail when want valid JSON object, but get struct",
+			got:              nonZero["struct"],
+			want:             validJSONObjectAsString,
+			wantAssertPassed: false,
+		},
+		{
+			name:             "should fail when want valid JSON object, but get uint",
+			got:              nonZero["uint"],
+			want:             validJSONObjectAsString,
+			wantAssertPassed: false,
+		},
+		{
+			name:             "should fail when want valid JSON object, but get uint8",
+			got:              nonZero["uint8"],
+			want:             validJSONObjectAsString,
+			wantAssertPassed: false,
+		},
+		{
+			name:             "should fail when want valid JSON object, but get uint16",
+			got:              nonZero["uint16"],
+			want:             validJSONObjectAsString,
+			wantAssertPassed: false,
+		},
+		{
+			name:             "should fail when want valid JSON object, but get uint32",
+			got:              nonZero["uint32"],
+			want:             validJSONObjectAsString,
+			wantAssertPassed: false,
+		},
+		{
+			name:             "should fail when want valid JSON object, but get uint64",
+			got:              nonZero["uint64"],
+			want:             validJSONObjectAsString,
+			wantAssertPassed: false,
+		},
+	}
+
+	t.Parallel()
+	for _, tc := range testCases {
+		tc := tc
+		t.Run(tc.name, func(t *testing.T) {
+			// Given
+			dummyT := testing.T{}
+			assert := New(&dummyT)
+
+			// When
+			assert(tc.got).IsJSONEqualTo(tc.got)
+
+			// Then
+			gotAssertPassed := !dummyT.Failed()
+			if gotAssertPassed == tc.wantAssertPassed {
+				return
+			}
+			t.Errorf("expected assert(%#v).IsJSONEqualTo(%#v) to be %v, found %v", tc.got, tc.want, tc.wantAssertPassed, gotAssertPassed)
+		})
+	}
+}

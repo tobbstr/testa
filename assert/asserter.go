@@ -1,6 +1,7 @@
 package assert
 
 import (
+	"encoding/json"
 	"errors"
 	"reflect"
 	"testing"
@@ -337,5 +338,68 @@ func (a asserter) NotEquals(want interface{}) {
 	if equals(a.got, want) {
 		a.errorf("expected assert(%#v).NotEquals(%#v) to be true, found false", a.got, want)
 		return
+	}
+}
+
+// IsJSONEqualTo asserts the observed value is valid JSON and that it equals the 'want' argument.
+// If not equal, the function under test is marked as having failed.
+func (a asserter) IsJSONEqualTo(want interface{}) {
+	gotValue := reflect.ValueOf(a.got)
+	gotKind := gotValue.Kind()
+
+	if gotKind != reflect.String && gotKind != reflect.Slice {
+		a.errorf("expected got to be a string or a slice of bytes")
+		return
+	}
+
+	wantValue := reflect.ValueOf(want)
+	wantKind := wantValue.Kind()
+
+	if wantKind != reflect.String && wantKind != reflect.Slice {
+		a.errorf("expected want to be a string or a slice of bytes")
+		return
+	}
+
+	var gotAsBytes []byte
+	if gotKind == reflect.String {
+		gotAsBytes = []byte(gotValue.String())
+	} else {
+		if gotValue.Type() == reflect.TypeOf([]byte(nil)) {
+			gotAsBytes = gotValue.Bytes()
+		} else {
+			a.errorf("expected got to be a string or slice of bytes")
+			return
+		}
+	}
+
+	var wantAsBytes []byte
+	if wantKind == reflect.String {
+		wantAsBytes = []byte(wantValue.String())
+	} else {
+		if wantValue.Type() == reflect.TypeOf([]byte(nil)) {
+			wantAsBytes = wantValue.Bytes()
+		} else {
+			a.errorf("expected want to be a string or slice of bytes")
+			return
+		}
+	}
+
+	var got1 interface{}
+	var want1 interface{}
+
+	var err error
+	err = json.Unmarshal(gotAsBytes, &got1)
+	if err != nil {
+		a.errorf("Error mashalling string 1 :: %s", err.Error())
+		return
+	}
+	err = json.Unmarshal(wantAsBytes, &want1)
+	if err != nil {
+		a.errorf("Error mashalling string 2 :: %s", err.Error())
+		return
+	}
+
+	if !reflect.DeepEqual(got1, want1) {
+		a.errorf("expected observed JSON value to be equal 'want', found got %v and want %v", a.got, want)
 	}
 }
