@@ -423,4 +423,26 @@ func (a asserter) IsJSONEqualTo(want interface{}) bool {
 	}
 	return true
 }
+
+// IsWantedError asserts the observed value is an error and that it's wanted. If it's not, the function
+// under test is marked as having failed.
+// This function's purpose is to simplify testing of error values returned by functions.
+// See the below example:
+//
+//		got, err := FuncToTest()
+//		assert(err).IsWantedError(wantErr) // where wantErr is a bool
+//
+func (a asserter) IsWantedError(wantErr bool) bool {
+	if wantErr && isNil(a.got) {
+		return false
+	}
+	if !wantErr && isNotNil(a.got, a.errorf) {
+		return false
+	}
+	if _, ok := a.got.(error); !ok {
+		a.errorf("expected observed value to be an error, found %#v", a.got)
+		return false
+	}
+
+	return true
 }
