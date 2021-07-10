@@ -141,10 +141,12 @@ func isList(list interface{}, errorf func(string, ...interface{})) bool {
 // Arrays, channels, maps and slices are considered empty if they're nil or has zero length.
 // Pointers are considered empty if the referenced values are nil.
 // For all other types, the zero value is considered empty.
-func (a asserter) IsEmpty() {
-	if !isEmpty(a.got) {
+func (a asserter) IsEmpty() bool {
+	isEmpty := isEmpty(a.got)
+	if !isEmpty {
 		a.errorf("expected observed value to be empty, found %#v", a.got)
 	}
+	return isEmpty
 }
 
 func isEmpty(obj interface{}) bool {
@@ -171,10 +173,12 @@ func isEmpty(obj interface{}) bool {
 
 // IsFunction asserts the observed value is a function value. If not, the function under test
 // is marked as having failed.
-func (a asserter) IsFunction() {
-	if !isFunc(a.got) {
+func (a asserter) IsFunction() bool {
+	isFunc := isFunc(a.got)
+	if !isFunc {
 		a.errorf("expected observed value to be a function value, found %#v", a.got)
 	}
+	return isFunc
 }
 
 func isFunc(arg interface{}) bool {
@@ -186,10 +190,12 @@ func isFunc(arg interface{}) bool {
 
 // IsNil asserts the observed value is nil. If not nil, the function
 // under test is marked as having failed.
-func (a asserter) IsNil() {
-	if !isNil(a.got) {
+func (a asserter) IsNil() bool {
+	isNil := isNil(a.got)
+	if !isNil {
 		a.errorf("expected the observed value to be nil, found %#v", a.got)
 	}
+	return isNil
 }
 
 func isNil(got interface{}) bool {
@@ -212,25 +218,28 @@ func isNil(got interface{}) bool {
 
 // IsNotEmpty asserts the observed value isn't empty. If empty, the function
 // under test is marked as having failed.
-func (a asserter) IsNotEmpty() {
-	isNotEmpty(a.got, a.errorf)
+func (a asserter) IsNotEmpty() bool {
+	return isNotEmpty(a.got, a.errorf)
 }
 
-func isNotEmpty(got interface{}, errorf func(string, ...interface{})) {
-	if isEmpty(got) {
+func isNotEmpty(got interface{}, errorf func(string, ...interface{})) bool {
+	isEmpty := isEmpty(got)
+	if isEmpty {
 		errorf("expected %#v not to be empty, found empty", got)
 	}
+	return isEmpty
 }
 
 // IsNotNil asserts the observed value is not nil. If nil, the function
 // under test is marked as having failed.
-func (a asserter) IsNotNil() {
-	isNotNil(a.got, a.errorf)
+func (a asserter) IsNotNil() bool {
+	return isNotNil(a.got, a.errorf)
 }
 
-func isNotNil(got interface{}, errorf func(string, ...interface{})) {
+func isNotNil(got interface{}, errorf func(string, ...interface{})) bool {
 	if got == nil {
 		errorf("expected non-nil reference, found nil")
+		return false
 	}
 	value := reflect.ValueOf(got)
 	kind := value.Kind()
@@ -239,23 +248,23 @@ func isNotNil(got interface{}, errorf func(string, ...interface{})) {
 		if kind == nilableKind {
 			if value.IsNil() {
 				errorf("expected non-nil value for nilable kind, found nil")
-				return
+				return false
 			}
-			return
 		}
 	}
+	return true
 }
 
 // IsTrue asserts the observed value is true. Otherwise, the function
 // under test is marked as having failed.
-func (a asserter) IsTrue() {
-	isTrue(a.got, a.errorf)
+func (a asserter) IsTrue() bool {
+	return isTrue(a.got, a.errorf)
 }
 
-func isTrue(got interface{}, errorf func(string, ...interface{})) {
+func isTrue(got interface{}, errorf func(string, ...interface{})) bool {
 	if got == nil {
 		errorf("expected observed value to be true, found %v", got)
-		return
+		return false
 	}
 
 	value := reflect.ValueOf(got)
@@ -263,26 +272,27 @@ func isTrue(got interface{}, errorf func(string, ...interface{})) {
 
 	if kind != reflect.Bool {
 		errorf("expected observed value to be true, found %v", got)
-		return
+		return false
 	}
 
 	gotTrue := value.Bool()
 	if !gotTrue {
 		errorf("expected observed value to be true, found %v", got)
-		return
+		return false
 	}
+	return true
 }
 
 // IsFalse asserts the observed value is false. Otherwise, the function
 // under test is marked as having failed.
-func (a asserter) IsFalse() {
-	isFalse(a.got, a.errorf)
+func (a asserter) IsFalse() bool {
+	return isFalse(a.got, a.errorf)
 }
 
-func isFalse(got interface{}, errorf func(string, ...interface{})) {
+func isFalse(got interface{}, errorf func(string, ...interface{})) bool {
 	if got == nil {
 		errorf("expected observed value to be false, found %v", got)
-		return
+		return false
 	}
 
 	value := reflect.ValueOf(got)
@@ -290,28 +300,29 @@ func isFalse(got interface{}, errorf func(string, ...interface{})) {
 
 	if kind != reflect.Bool {
 		errorf("expected observed value to be false, found %v", got)
-		return
+		return false
 	}
 
 	gotTrue := value.Bool()
 	if gotTrue {
 		errorf("expected observed value to be false, found %v", got)
-		return
+		return false
 	}
+	return true
 }
 
 // IsPointerWithSameAddressAs asserts the observed pointer points to the same memory address as
 // the 'want' pointer. Both the observed and want values must be pointers. If not, or if
 // the pointers don't point to the same memory address, the function under test is marked
 // as having failed.
-func (a asserter) IsPointerWithSameAddressAs(want interface{}) {
-	isPointerWithSameAddressAs(a.got, want, a.errorf)
+func (a asserter) IsPointerWithSameAddressAs(want interface{}) bool {
+	return isPointerWithSameAddressAs(a.got, want, a.errorf)
 }
 
-func isPointerWithSameAddressAs(got, want interface{}, errorf func(string, ...interface{})) {
+func isPointerWithSameAddressAs(got, want interface{}, errorf func(string, ...interface{})) bool {
 	if got == nil || want == nil {
 		errorf("expected both 'got' and 'want' to be non-nil values, found got %v and want %v", got, want)
-		return
+		return false
 	}
 
 	gotKind := reflect.ValueOf(got).Kind()
@@ -319,12 +330,14 @@ func isPointerWithSameAddressAs(got, want interface{}, errorf func(string, ...in
 
 	if gotKind != reflect.Ptr || wantKind != reflect.Ptr {
 		errorf("expected both 'got' and 'want' to be pointers, found got %v and want %v", got, want)
-		return
+		return false
 	}
 
 	if got != want {
 		errorf("expected 'want' to point to same memory address as the observed value, found got %v and want %v", got, want)
+		return false
 	}
+	return true
 }
 
 // NotEquals asserts the observed value is not equal to the 'want' argument. It performs the
@@ -343,13 +356,18 @@ func (a asserter) NotEquals(want interface{}) {
 
 // IsJSONEqualTo asserts the observed value is valid JSON and that it equals the 'want' argument.
 // If not equal, the function under test is marked as having failed.
-func (a asserter) IsJSONEqualTo(want interface{}) {
+func (a asserter) IsJSONEqualTo(want interface{}) bool {
+	if a.got == nil || want == nil {
+		a.errorf("expected both 'got' and 'want' to be non-nil values, found got %v and want %v", a.got, want)
+		return false
+	}
+
 	gotValue := reflect.ValueOf(a.got)
 	gotKind := gotValue.Kind()
 
 	if gotKind != reflect.String && gotKind != reflect.Slice {
 		a.errorf("expected got to be a string or a slice of bytes")
-		return
+		return false
 	}
 
 	wantValue := reflect.ValueOf(want)
@@ -357,7 +375,7 @@ func (a asserter) IsJSONEqualTo(want interface{}) {
 
 	if wantKind != reflect.String && wantKind != reflect.Slice {
 		a.errorf("expected want to be a string or a slice of bytes")
-		return
+		return false
 	}
 
 	var gotAsBytes []byte
@@ -368,7 +386,7 @@ func (a asserter) IsJSONEqualTo(want interface{}) {
 			gotAsBytes = gotValue.Bytes()
 		} else {
 			a.errorf("expected got to be a string or slice of bytes")
-			return
+			return false
 		}
 	}
 
@@ -380,7 +398,7 @@ func (a asserter) IsJSONEqualTo(want interface{}) {
 			wantAsBytes = wantValue.Bytes()
 		} else {
 			a.errorf("expected want to be a string or slice of bytes")
-			return
+			return false
 		}
 	}
 
@@ -391,15 +409,18 @@ func (a asserter) IsJSONEqualTo(want interface{}) {
 	err = json.Unmarshal(gotAsBytes, &got1)
 	if err != nil {
 		a.errorf("Error mashalling string 1 :: %s", err.Error())
-		return
+		return false
 	}
 	err = json.Unmarshal(wantAsBytes, &want1)
 	if err != nil {
 		a.errorf("Error mashalling string 2 :: %s", err.Error())
-		return
+		return false
 	}
 
 	if !reflect.DeepEqual(got1, want1) {
 		a.errorf("expected observed JSON value to be equal 'want', found got %v and want %v", a.got, want)
+		return false
 	}
+	return true
+}
 }
