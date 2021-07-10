@@ -426,17 +426,12 @@ func (a asserter) IsJSONEqualTo(want interface{}) bool {
 
 // IsWantedError asserts the observed value is an error and that it's wanted. If it's not, the function
 // under test is marked as having failed.
-// This function's purpose is to simplify testing of error values returned by functions, and it's best
-// used by a Fatal asserter since it then also stops the execution of code. See the below example:
+// This function's purpose is to simplify testing of error values returned by functions.
+// See the below example:
 //
 //		got, err := FuncToTest()
-//		require(err).IsWantedError(wantErr) // where wantErr is a bool
-//		if err != nil {
-//			return
-//		}
+//		assert(err).IsWantedError(wantErr) // where wantErr is a bool
 //
-//		// Observed value assertions
-//		assert(got).Equals(want)
 func (a asserter) IsWantedError(wantErr bool) bool {
 	if wantErr && isNil(a.got) {
 		return false
