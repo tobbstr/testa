@@ -3,6 +3,7 @@ package assert
 import (
 	"encoding/json"
 	"errors"
+	"fmt"
 	"reflect"
 	"testing"
 )
@@ -13,19 +14,15 @@ var nilableKinds = []reflect.Kind{
 	reflect.Interface, reflect.Ptr, reflect.Slice,
 }
 
-type asserter struct {
-	got    interface{}
-	errorf func(string, ...interface{})
-}
-
 // New returns an assert function, which is used to make assertions.
 // If any assertion fails using this function, code execution is allowed to continue,
 // but the test is marked as having failed.
 func New(t *testing.T) func(got interface{}) asserter {
 	return func(got interface{}) asserter {
 		return asserter{
-			errorf: t.Errorf,
-			got:    got,
+			got:   got,
+			t:     t,
+			fatal: false,
 		}
 	}
 }
@@ -36,24 +33,42 @@ func New(t *testing.T) func(got interface{}) asserter {
 func NewFatal(t *testing.T) func(got interface{}) asserter {
 	return func(got interface{}) asserter {
 		return asserter{
-			errorf: t.Fatalf,
-			got:    got,
+			got:   got,
+			t:     t,
+			fatal: true,
 		}
 	}
+}
+
+type asserter struct {
+	got   interface{}
+	t     *testing.T
+	fatal bool
+}
+
+func (a *asserter) errorf(msg string, want interface{}, hasWant bool) {
+	if a.fatal {
+		a.t.Fatal(errorMsg(msg, want, a.got, hasWant))
+		return
+	}
+
+	a.t.Fail()
+	a.t.Log(errorMsg(msg, want, a.got, hasWant))
 }
 
 // Equals asserts the observed value equals the 'want' argument (expected value).
 // They are considered equal if both are nil or if they're deeply equal according to
 // reflect.DeepEqual's definition of equal.
-func (a asserter) Equals(want interface{}) {
+func (a asserter) Equals(want interface{}) bool {
 	if err := validateArgsForEqualsFn(a.got, want); err != nil {
-		a.errorf("validation of args for equals function failed: %v", err)
-		return
+		a.errorf(fmt.Sprintf("Invalid argument: %v", err), want, true)
+		return false
 	}
 	if !equals(a.got, want) {
-		a.errorf("expected assert(%#v).Equals(%#v) to be true, found false", a.got, want)
-		return
+		a.errorf("Observed and expected values must be equal", want, true)
+		return false
 	}
+	return true
 }
 
 func validateArgsForEqualsFn(a, b interface{}) error {
@@ -87,21 +102,18 @@ func equals(got, want interface{}) bool {
 // values being compared are not equal, the function under test is marked as having failed.
 // Two sequences of elements are equal if their number of elements are the
 // same, and if their elements are equal ignoring order.
-func (a asserter) IgnoringOrderEqualsElementsIn(want interface{}) {
-	ignoringOrderEqualsElementsIn(a.got, want, a.errorf)
-}
-
-func ignoringOrderEqualsElementsIn(got interface{}, want interface{}, errorf func(string, ...interface{})) {
-	if !isList(got, errorf) || !isList(want, errorf) {
-		return
+func (a asserter) IgnoringOrderEqualsElementsIn(want interface{}) bool {
+	if !isList(a.got) || !isList(want) {
+		a.errorf("Invalid argument", want, true)
+		return false
 	}
 
-	if isEmpty(got) && isEmpty(want) {
-		return
+	if isEmpty(a.got) && isEmpty(want) {
+		return true
 	}
 
 	matchingElemCountFor := make(map[interface{}]int)
-	gotElemSequence := reflect.ValueOf(got)
+	gotElemSequence := reflect.ValueOf(a.got)
 	gotElemSequenceLen := gotElemSequence.Len()
 	wantElemCountFor := make(map[interface{}]int)
 	wantElemSequence := reflect.ValueOf(want)
@@ -122,15 +134,16 @@ func ignoringOrderEqualsElementsIn(got interface{}, want interface{}, errorf fun
 	gotMatchingElemCount := len(matchingElemCountFor)
 
 	if wantElemCount != gotMatchingElemCount {
-		errorf("elements mismatch, expected %d matching elements found %d", wantElemCount, gotMatchingElemCount)
+		a.errorf(fmt.Sprintf("No of matching elements must be equal, want = %d, got = %d", wantElemCount, gotMatchingElemCount), want, true)
+		return false
 	}
+
+	return true
 }
 
-func isList(list interface{}, errorf func(string, ...interface{})) bool {
+func isList(list interface{}) bool {
 	kind := reflect.ValueOf(list).Kind()
 	if kind != reflect.Array && kind != reflect.Slice {
-		// fmt.Printf("unsupported argument type for 'list', got %s expected array or slice\n", kind)
-		errorf("unsupported argument type for 'list', expected array or slice, found %s", kind)
 		return false
 	}
 	return true
@@ -144,7 +157,7 @@ func isList(list interface{}, errorf func(string, ...interface{})) bool {
 func (a asserter) IsEmpty() bool {
 	isEmpty := isEmpty(a.got)
 	if !isEmpty {
-		a.errorf("expected observed value to be empty, found %#v", a.got)
+		a.errorf("Observed value must be empty", nil, false)
 	}
 	return isEmpty
 }
@@ -176,7 +189,7 @@ func isEmpty(obj interface{}) bool {
 func (a asserter) IsFunction() bool {
 	isFunc := isFunc(a.got)
 	if !isFunc {
-		a.errorf("expected observed value to be a function value, found %#v", a.got)
+		a.errorf("Observed value must be a function", nil, false)
 	}
 	return isFunc
 }
@@ -193,7 +206,7 @@ func isFunc(arg interface{}) bool {
 func (a asserter) IsNil() bool {
 	isNil := isNil(a.got)
 	if !isNil {
-		a.errorf("expected the observed value to be nil, found %#v", a.got)
+		a.errorf("Observed value must be nil", nil, false)
 	}
 	return isNil
 }
@@ -219,51 +232,36 @@ func isNil(got interface{}) bool {
 // IsNotEmpty asserts the observed value isn't empty. If empty, the function
 // under test is marked as having failed.
 func (a asserter) IsNotEmpty() bool {
-	return isNotEmpty(a.got, a.errorf)
-}
-
-func isNotEmpty(got interface{}, errorf func(string, ...interface{})) bool {
-	isEmpty := isEmpty(got)
+	isEmpty := isEmpty(a.got)
 	if isEmpty {
-		errorf("expected %#v not to be empty, found empty", got)
+		a.errorf("Observed value must non-empty", nil, false)
 	}
-	return isEmpty
+	return !isEmpty
 }
 
 // IsNotNil asserts the observed value is not nil. If nil, the function
 // under test is marked as having failed.
 func (a asserter) IsNotNil() bool {
-	return isNotNil(a.got, a.errorf)
-}
-
-func isNotNil(got interface{}, errorf func(string, ...interface{})) bool {
-	if got == nil {
-		errorf("expected non-nil reference, found nil")
-		return false
+	isNil := isNil(a.got)
+	if isNil {
+		a.errorf("Observed value must not be nil", nil, false)
 	}
-	value := reflect.ValueOf(got)
-	kind := value.Kind()
-
-	for _, nilableKind := range nilableKinds {
-		if kind == nilableKind {
-			if value.IsNil() {
-				errorf("expected non-nil value for nilable kind, found nil")
-				return false
-			}
-		}
-	}
-	return true
+	return !isNil
 }
 
 // IsTrue asserts the observed value is true. Otherwise, the function
-// under test is marked as having failed.
+// under test is marked as having failed. Only a boolean value of true
+// returns true, for all other cases it returns false.
 func (a asserter) IsTrue() bool {
-	return isTrue(a.got, a.errorf)
+	isTrue := isTrue((a.got))
+	if !isTrue {
+		a.errorf("Observed value must be true", nil, false)
+	}
+	return isTrue
 }
 
-func isTrue(got interface{}, errorf func(string, ...interface{})) bool {
+func isTrue(got interface{}) bool {
 	if got == nil {
-		errorf("expected observed value to be true, found %v", got)
 		return false
 	}
 
@@ -271,27 +269,25 @@ func isTrue(got interface{}, errorf func(string, ...interface{})) bool {
 	kind := value.Kind()
 
 	if kind != reflect.Bool {
-		errorf("expected observed value to be true, found %v", got)
 		return false
 	}
 
-	gotTrue := value.Bool()
-	if !gotTrue {
-		errorf("expected observed value to be true, found %v", got)
-		return false
-	}
-	return true
+	return value.Bool()
 }
 
 // IsFalse asserts the observed value is false. Otherwise, the function
-// under test is marked as having failed.
+// under test is marked as having failed. Only a boolean value of false
+// returns true, for all other cases it returns false.
 func (a asserter) IsFalse() bool {
-	return isFalse(a.got, a.errorf)
+	isFalse := isFalse(a.got)
+	if !isFalse {
+		a.errorf("Observed value must be false", nil, false)
+	}
+	return isFalse
 }
 
-func isFalse(got interface{}, errorf func(string, ...interface{})) bool {
+func isFalse(got interface{}) bool {
 	if got == nil {
-		errorf("expected observed value to be false, found %v", got)
 		return false
 	}
 
@@ -299,16 +295,12 @@ func isFalse(got interface{}, errorf func(string, ...interface{})) bool {
 	kind := value.Kind()
 
 	if kind != reflect.Bool {
-		errorf("expected observed value to be false, found %v", got)
 		return false
 	}
 
 	gotTrue := value.Bool()
-	if gotTrue {
-		errorf("expected observed value to be false, found %v", got)
-		return false
-	}
-	return true
+
+	return !gotTrue
 }
 
 // IsPointerWithSameAddressAs asserts the observed pointer points to the same memory address as
@@ -316,12 +308,15 @@ func isFalse(got interface{}, errorf func(string, ...interface{})) bool {
 // the pointers don't point to the same memory address, the function under test is marked
 // as having failed.
 func (a asserter) IsPointerWithSameAddressAs(want interface{}) bool {
-	return isPointerWithSameAddressAs(a.got, want, a.errorf)
+	isPointerWithSameAddressAs := isPointerWithSameAddressAs(a.got, want)
+	if !isPointerWithSameAddressAs {
+		a.errorf("Observed pointer must be the same as the expected", want, true)
+	}
+	return isPointerWithSameAddressAs
 }
 
-func isPointerWithSameAddressAs(got, want interface{}, errorf func(string, ...interface{})) bool {
+func isPointerWithSameAddressAs(got, want interface{}) bool {
 	if got == nil || want == nil {
-		errorf("expected both 'got' and 'want' to be non-nil values, found got %v and want %v", got, want)
 		return false
 	}
 
@@ -329,12 +324,10 @@ func isPointerWithSameAddressAs(got, want interface{}, errorf func(string, ...in
 	wantKind := reflect.ValueOf(want).Kind()
 
 	if gotKind != reflect.Ptr || wantKind != reflect.Ptr {
-		errorf("expected both 'got' and 'want' to be pointers, found got %v and want %v", got, want)
 		return false
 	}
 
 	if got != want {
-		errorf("expected 'want' to point to same memory address as the observed value, found got %v and want %v", got, want)
 		return false
 	}
 	return true
@@ -343,22 +336,24 @@ func isPointerWithSameAddressAs(got, want interface{}, errorf func(string, ...in
 // NotEquals asserts the observed value is not equal to the 'want' argument. It performs the
 // same comparison as the Equals method, but inverts the result. If they are equal, the function
 // under test is marked as having failed.
-func (a asserter) NotEquals(want interface{}) {
+func (a asserter) NotEquals(want interface{}) bool {
 	if err := validateArgsForEqualsFn(a.got, want); err != nil {
-		a.errorf("validation of args for equals function failed: %v", err)
-		return
+		a.errorf(fmt.Sprintf("Invalid argument: %v", err), want, true)
+		return false
 	}
 	if equals(a.got, want) {
-		a.errorf("expected assert(%#v).NotEquals(%#v) to be true, found false", a.got, want)
-		return
+		a.errorf("Observed and expected values must be unequal", want, true)
+		return false
 	}
+
+	return true
 }
 
 // IsJSONEqualTo asserts the observed value is valid JSON and that it equals the 'want' argument.
 // If not equal, the function under test is marked as having failed.
 func (a asserter) IsJSONEqualTo(want interface{}) bool {
 	if a.got == nil || want == nil {
-		a.errorf("expected both 'got' and 'want' to be non-nil values, found got %v and want %v", a.got, want)
+		a.errorf("Invalid argument", want, true)
 		return false
 	}
 
@@ -366,7 +361,7 @@ func (a asserter) IsJSONEqualTo(want interface{}) bool {
 	gotKind := gotValue.Kind()
 
 	if gotKind != reflect.String && gotKind != reflect.Slice {
-		a.errorf("expected got to be a string or a slice of bytes")
+		a.errorf("Invalid observed argument type, only string and []byte allowed", want, true)
 		return false
 	}
 
@@ -374,7 +369,7 @@ func (a asserter) IsJSONEqualTo(want interface{}) bool {
 	wantKind := wantValue.Kind()
 
 	if wantKind != reflect.String && wantKind != reflect.Slice {
-		a.errorf("expected want to be a string or a slice of bytes")
+		a.errorf("Expected value must be a string or slice of bytes", want, true)
 		return false
 	}
 
@@ -385,7 +380,7 @@ func (a asserter) IsJSONEqualTo(want interface{}) bool {
 		if gotValue.Type() == reflect.TypeOf([]byte(nil)) {
 			gotAsBytes = gotValue.Bytes()
 		} else {
-			a.errorf("expected got to be a string or slice of bytes")
+			a.errorf("Observed value must be a string or slice of bytes", want, true)
 			return false
 		}
 	}
@@ -397,7 +392,7 @@ func (a asserter) IsJSONEqualTo(want interface{}) bool {
 		if wantValue.Type() == reflect.TypeOf([]byte(nil)) {
 			wantAsBytes = wantValue.Bytes()
 		} else {
-			a.errorf("expected want to be a string or slice of bytes")
+			a.errorf("Expected slice must be a slice of bytes", want, true)
 			return false
 		}
 	}
@@ -408,17 +403,17 @@ func (a asserter) IsJSONEqualTo(want interface{}) bool {
 	var err error
 	err = json.Unmarshal(gotAsBytes, &got1)
 	if err != nil {
-		a.errorf("Error mashalling string 1 :: %s", err.Error())
+		a.errorf("Could not JSON-unmarshal observed value", want, true)
 		return false
 	}
 	err = json.Unmarshal(wantAsBytes, &want1)
 	if err != nil {
-		a.errorf("Error mashalling string 2 :: %s", err.Error())
+		a.errorf("Could not JSON-unmarshal expected value", want, true)
 		return false
 	}
 
 	if !reflect.DeepEqual(got1, want1) {
-		a.errorf("expected observed JSON value to be equal 'want', found got %v and want %v", a.got, want)
+		a.errorf("Values are not equal", want, true)
 		return false
 	}
 	return true
@@ -434,15 +429,26 @@ func (a asserter) IsJSONEqualTo(want interface{}) bool {
 //
 func (a asserter) IsWantedError(wantErr bool) bool {
 	if wantErr && isNil(a.got) {
+		a.errorf("Observed value must not be nil", wantErr, true)
 		return false
 	}
-	if !wantErr && isNotNil(a.got, a.errorf) {
+	if !wantErr && !isNil(a.got) {
+		a.errorf("Observed value must be nil", wantErr, true)
 		return false
 	}
-	if _, ok := a.got.(error); !ok {
-		a.errorf("expected observed value to be an error, found %#v", a.got)
-		return false
+	if !isNil(a.got) {
+		if _, ok := a.got.(error); !ok {
+			a.errorf("Observed value must be an error", wantErr, true)
+			return false
+		}
 	}
 
 	return true
+}
+
+func isChan(arg interface{}) bool {
+	if arg == nil {
+		return false
+	}
+	return reflect.TypeOf(arg).Kind() == reflect.Chan
 }
