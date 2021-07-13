@@ -1,6 +1,7 @@
 package assert
 
 import (
+	"fmt"
 	"testing"
 )
 
@@ -32,6 +33,7 @@ var (
 		"uint16":     uint16(0),
 		"uint32":     uint32(0),
 		"uint64":     uint64(0),
+		"error":      nil,
 	}
 	nonZero = map[string]interface{}{
 		"array":      [3]int{1, 2, 3},
@@ -60,239 +62,349 @@ var (
 		"uint16":     uint16(3),
 		"uint32":     uint32(3),
 		"uint64":     uint64(3),
+		"error":      fmt.Errorf("dummy-error"),
 	}
 )
 
 func TestEquals(t *testing.T) {
-	// given
-	testCases := map[string]struct {
-		got              interface{}
-		want             interface{}
-		wantAssertPassed bool
+	type args struct {
+		got  interface{}
+		want interface{}
+	}
+	tests := []struct {
+		name           string
+		args           args
+		want           bool
+		wantTestFailed bool
 	}{
-		"should pass for identical nil args": {
-			got:              nil,
-			want:             nil,
-			wantAssertPassed: true,
+		{
+			name: "should pass for identical nil args",
+			args: args{
+				got:  nil,
+				want: nil,
+			},
+			want:           true,
+			wantTestFailed: false,
 		},
-		"should pass for equal comparable non-nil args": {
-			got:              nonZero["int"],
-			want:             nonZero["int"],
-			wantAssertPassed: true,
+		{
+			name: "should pass for equal comparable non-nil args",
+			args: args{
+				got:  nonZero["int"],
+				want: nonZero["int"],
+			},
+			want:           true,
+			wantTestFailed: false,
 		},
-		"should fail when want non-nil, but get nil": {
-			got:              nil,
-			want:             nonZero["int"],
-			wantAssertPassed: false,
+		{
+			name: "should fail when want non-nil, but get nil",
+			args: args{
+				got:  nil,
+				want: nonZero["int"],
+			},
+			want:           false,
+			wantTestFailed: true,
 		},
-		"should fail when want nil, but get comparable non-nil": {
-			got:              nonZero["struct"],
-			want:             nil,
-			wantAssertPassed: false,
+		{
+			name: "should fail when want nil, but get comparable non-nil",
+			args: args{
+				got:  nonZero["struct"],
+				want: nil,
+			},
+			want:           false,
+			wantTestFailed: true,
 		},
-		"should fail when want comparable non-nil, but get non-comparable func": {
-			got:              nonZero["func"],
-			want:             nonZero["int"],
-			wantAssertPassed: false,
+		{
+			name: "should fail when want comparable non-nil, but get non-comparable func",
+			args: args{
+				got:  nonZero["func"],
+				want: nonZero["int"],
+			},
+			want:           false,
+			wantTestFailed: true,
 		},
-		"should fail when want non-comparable func, but get comparable non-nil": {
-			got:              nonZero["string"],
-			want:             func() {},
-			wantAssertPassed: false,
+		{
+			name: "should fail when want non-comparable func, but get comparable non-nil",
+			args: args{
+				got:  nonZero["string"],
+				want: func() {},
+			},
+			want:           false,
+			wantTestFailed: true,
 		},
-		"should fail for unequal comparable non-nil args": {
-			got:              nonZero["int"],
-			want:             nonZero["string"],
-			wantAssertPassed: false,
+		{
+			name: "should fail for unequal comparable non-nil args",
+			args: args{
+				got:  nonZero["int"],
+				want: nonZero["string"],
+			},
+			want:           false,
+			wantTestFailed: true,
 		},
 	}
 
-	t.Parallel()
-	for name, tc := range testCases {
-		tc := tc
-		t.Run(name, func(subT *testing.T) {
-			// given
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			// Given
 			dummyT := &testing.T{}
-			assert := New(dummyT)
+			dummyAssert := New(dummyT)
 
-			// when
-			assert(tc.got).Equals(tc.want)
+			// When
+			got := dummyAssert(tt.args.got).Equals(tt.args.want)
 
-			// then
-			gotAssertPassed := !dummyT.Failed()
-			if gotAssertPassed == tc.wantAssertPassed {
+			// Then
+			if got != tt.want {
+				t.Error(errorMsg(fmt.Sprintf("expected got = %#v, found %#v", tt.want, got), tt.want, got, true))
 				return
 			}
-			subT.Errorf("expected assert(%#v).Equals(%#v) to be %v, found %v", tc.got, tc.want, tc.wantAssertPassed, gotAssertPassed)
+			if dummyT.Failed() != tt.wantTestFailed {
+				t.Error(errorMsg(fmt.Sprintf("expected dummyT.Failed() = %#v, found %#v", tt.wantTestFailed, dummyT.Failed()), tt.wantTestFailed, dummyT.Failed(), true))
+			}
 		})
 	}
 }
 
 func TestIgnoringOrderEqualsElementsIn(t *testing.T) {
-	testCases := map[string]struct {
-		wantAssertPassed bool
-		want             interface{}
-		got              interface{}
+	type args struct {
+		got  interface{}
+		want interface{}
+	}
+	tests := []struct {
+		name string
+		args args
+		want bool
 	}{
-		"should fail when get bool": {
-			wantAssertPassed: false,
-			want:             nonZero["slice"],
-			got:              nonZero["bool"],
+		{
+			name: "should fail when get bool",
+			args: args{
+				got:  nonZero["bool"],
+				want: nonZero["slice"],
+			},
+			want: false,
 		},
-		"should fail when get byte": {
-			wantAssertPassed: false,
-			want:             nonZero["slice"],
-			got:              nonZero["byte"],
+		{
+			name: "should fail when get chan",
+			args: args{
+				got:  nonZero["chan"],
+				want: nonZero["slice"],
+			},
+			want: false,
 		},
-		"should fail when get chan": {
-			wantAssertPassed: false,
-			want:             nonZero["slice"],
-			got:              nonZero["chan"],
+		{
+			name: "should fail when get complex64",
+			args: args{
+				got:  nonZero["complex64"],
+				want: nonZero["slice"],
+			},
+			want: false,
 		},
-		"should fail when get complex128": {
-			wantAssertPassed: false,
-			want:             nonZero["slice"],
-			got:              nonZero["complex128"],
+		{
+			name: "should fail when get complex128",
+			args: args{
+				got:  nonZero["complex128"],
+				want: nonZero["slice"],
+			},
+			want: false,
 		},
-		"should fail when get complex64": {
-			wantAssertPassed: false,
-			want:             nonZero["slice"],
-			got:              nonZero["complex64"],
+		{
+			name: "should fail when get float32",
+			args: args{
+				got:  nonZero["float32"],
+				want: nonZero["slice"],
+			},
+			want: false,
 		},
-		"should fail when get float32": {
-			wantAssertPassed: false,
-			want:             nonZero["slice"],
-			got:              nonZero["float32"],
+		{
+			name: "should fail when get float64",
+			args: args{
+				got:  nonZero["float64"],
+				want: nonZero["slice"],
+			},
+			want: false,
 		},
-		"should fail when get float64": {
-			wantAssertPassed: false,
-			want:             nonZero["slice"],
-			got:              nonZero["float64"],
+		{
+			name: "should fail when get func",
+			args: args{
+				got:  nonZero["func"],
+				want: nonZero["slice"],
+			},
+			want: false,
 		},
-		"should fail when get func": {
-			wantAssertPassed: false,
-			want:             nonZero["slice"],
-			got:              nonZero["func"],
+		{
+			name: "should fail when get int",
+			args: args{
+				got:  nonZero["int"],
+				want: nonZero["slice"],
+			},
+			want: false,
 		},
-		"should fail when get int": {
-			wantAssertPassed: false,
-			want:             nonZero["slice"],
-			got:              nonZero["int"],
+		{
+			name: "should fail when get int8",
+			args: args{
+				got:  nonZero["int8"],
+				want: nonZero["slice"],
+			},
+			want: false,
 		},
-		"should fail when get int8": {
-			wantAssertPassed: false,
-			want:             nonZero["slice"],
-			got:              nonZero["int8"],
+		{
+			name: "should fail when get int16",
+			args: args{
+				got:  nonZero["int16"],
+				want: nonZero["slice"],
+			},
+			want: false,
 		},
-		"should fail when get int16": {
-			wantAssertPassed: false,
-			want:             nonZero["slice"],
-			got:              nonZero["int16"],
+		{
+			name: "should fail when get int32",
+			args: args{
+				got:  nonZero["int32"],
+				want: nonZero["slice"],
+			},
+			want: false,
 		},
-		"should fail when get int32": {
-			wantAssertPassed: false,
-			want:             nonZero["slice"],
-			got:              nonZero["int32"],
+		{
+			name: "should fail when get int64",
+			args: args{
+				got:  nonZero["int64"],
+				want: nonZero["slice"],
+			},
+			want: false,
 		},
-		"should fail when get int64": {
-			wantAssertPassed: false,
-			want:             nonZero["slice"],
-			got:              nonZero["int64"],
+		{
+			name: "should fail when get map",
+			args: args{
+				got:  nonZero["map"],
+				want: nonZero["slice"],
+			},
+			want: false,
 		},
-		"should fail when get map": {
-			wantAssertPassed: false,
-			want:             nonZero["slice"],
-			got:              nonZero["map"],
+		{
+			name: "should fail when get ptr",
+			args: args{
+				got:  nonZero["ptr"],
+				want: nonZero["slice"],
+			},
+			want: false,
 		},
-		"should fail when get ptr": {
-			wantAssertPassed: false,
-			want:             nonZero["slice"],
-			got:              nonZero["ptr"],
+		{
+			name: "should fail when get string",
+			args: args{
+				got:  nonZero["string"],
+				want: nonZero["slice"],
+			},
+			want: false,
 		},
-		"should fail when get string": {
-			wantAssertPassed: false,
-			want:             nonZero["slice"],
-			got:              nonZero["string"],
+		{
+			name: "should fail when get struct",
+			args: args{
+				got:  nonZero["struct"],
+				want: nonZero["slice"],
+			},
+			want: false,
 		},
-		"should fail when get struct": {
-			wantAssertPassed: false,
-			want:             nonZero["slice"],
-			got:              nonZero["struct"],
+		{
+			name: "should pass when want slice and get the same set of elements in order",
+			args: args{
+				got:  []string{"a", "b", "c"},
+				want: []string{"a", "b", "c"},
+			},
+			want: true,
 		},
-		"should pass when want slice and get the same set of elements in order": {
-			wantAssertPassed: true,
-			want:             []string{"a", "b", "c"},
-			got:              []string{"a", "b", "c"},
+		{
+			name: "should pass when want slice and get the same set of elements not in order",
+			args: args{
+				got:  []string{"b", "c", "a"},
+				want: []string{"a", "b", "c"},
+			},
+			want: true,
 		},
-		"should pass when want slice and get the same set of elements not in order": {
-			wantAssertPassed: true,
-			want:             []string{"a", "b", "c"},
-			got:              []string{"b", "c", "a"},
+		{
+			name: "should fail when want slice but get subset not in order",
+			args: args{
+				got:  []string{"c", "a"},
+				want: []string{"a", "b", "c"},
+			},
+			want: false,
 		},
-		"should fail when want slice but get subset not in order": {
-			wantAssertPassed: false,
-			want:             []string{"a", "b", "c"},
-			got:              []string{"c", "a"},
+		{
+			name: "should fail when want slice but get subset in order",
+			args: args{
+				got:  []string{"b", "c"},
+				want: []string{"a", "b", "c"},
+			},
+			want: false,
 		},
-		"should fail when want slice but get subset in order": {
-			wantAssertPassed: false,
-			want:             []string{"a", "b", "c"},
-			got:              []string{"b", "c"},
+		{
+			name: "should pass when want array and get the same set of elements in order",
+			args: args{
+				got:  [3]string{"a", "b", "c"},
+				want: [3]string{"a", "b", "c"},
+			},
+			want: true,
 		},
-		"should pass when want array and get the same set of elements in order": {
-			wantAssertPassed: true,
-			want:             [3]string{"a", "b", "c"},
-			got:              [3]string{"a", "b", "c"},
+		{
+			name: "should pass when want array and get the same set of elements not in order",
+			args: args{
+				got:  [3]string{"b", "c", "a"},
+				want: [3]string{"a", "b", "c"},
+			},
+			want: true,
 		},
-		"should pass when want array and get the same set of elements not in order": {
-			wantAssertPassed: true,
-			want:             [3]string{"a", "b", "c"},
-			got:              [3]string{"b", "c", "a"},
+		{
+			name: "should fail when want array but get subset not in order",
+			args: args{
+				got:  [2]string{"c", "a"},
+				want: [3]string{"a", "b", "c"},
+			},
+			want: false,
 		},
-		"should fail when want array but get subset not in order": {
-			wantAssertPassed: false,
-			want:             [3]string{"a", "b", "c"},
-			got:              [2]string{"c", "a"},
+		{
+			name: "should fail when want array but get subset in order",
+			args: args{
+				got:  [2]string{"b", "c"},
+				want: [3]string{"a", "b", "c"},
+			},
+			want: false,
 		},
-		"should fail when want array but get subset in order": {
-			wantAssertPassed: false,
-			want:             [3]string{"a", "b", "c"},
-			got:              [2]string{"b", "c"},
+		{
+			name: "should pass when want array but get slice with same set of elements",
+			args: args{
+				got:  []string{"a", "b", "c"},
+				want: [3]string{"a", "b", "c"},
+			},
+			want: true,
 		},
-		"should pass when want array but get slice with same set of elements": {
-			wantAssertPassed: true,
-			want:             [3]string{"a", "b", "c"},
-			got:              []string{"a", "b", "c"},
+		{
+			name: "should pass when want slice but get array with same set of elements",
+			args: args{
+				got:  [3]string{"a", "b", "c"},
+				want: []string{"a", "b", "c"},
+			},
+			want: true,
 		},
-		"should pass when want slice but get array with same set of elements": {
-			wantAssertPassed: true,
-			want:             []string{"a", "b", "c"},
-			got:              [3]string{"a", "b", "c"},
-		},
-		"should pass when want and get empty slice": {
-			wantAssertPassed: true,
-			want:             []string{},
-			got:              []string{},
+		{
+			name: "should pass when want and get empty slice",
+			args: args{
+				got:  []string{},
+				want: []string{},
+			},
+			want: true,
 		},
 	}
 
 	t.Parallel()
-	for name, tc := range testCases {
-		tc := tc
-		t.Run(name, func(subT *testing.T) {
-			// given
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			// Given
 			dummyT := &testing.T{}
-			assert := New(dummyT)
+			dummyAssert := New(dummyT)
+			assert := New(t)
 
-			// when
-			assert(tc.got).IgnoringOrderEqualsElementsIn(tc.want)
+			// When
+			got := dummyAssert(tt.args.got).IgnoringOrderEqualsElementsIn(tt.args.want)
 
-			// then
-			gotAssertPassed := !dummyT.Failed()
-			if gotAssertPassed == tc.wantAssertPassed {
-				return
-			}
-			subT.Errorf("expected assert(%#v).IgnoringOrderEqualsElementsIn(%#v) to be %v, found %v", tc.got, tc.want, tc.wantAssertPassed, gotAssertPassed)
+			// Then
+			assert(got).Equals(tt.want)
+			assert(dummyT.Failed()).Equals(!tt.want)
 		})
 	}
 }
@@ -300,329 +412,516 @@ func TestIgnoringOrderEqualsElementsIn(t *testing.T) {
 func TestIsEmpty(t *testing.T) {
 	nonEmptyChan := make(chan int, 10)
 	nonEmptyChan <- 4
-	testcases := map[string]struct {
-		got              interface{}
-		wantAssertPassed bool
+
+	type args struct {
+		got interface{}
+	}
+	tests := []struct {
+		name string
+		args args
+		want bool
 	}{
-		"should pass when get empty array": {
-			got:              [0]int{},
-			wantAssertPassed: true,
+		{
+			name: "should pass when get empty array",
+			args: args{
+				got: [0]int{},
+			},
+			want: true,
 		},
-		"should fail when get non-empty array": {
-			got:              zero["array"],
-			wantAssertPassed: false,
+		{
+			name: "should fail when get non-empty array",
+			args: args{
+				got: zero["array"],
+			},
+			want: false,
 		},
-		"should pass when get zero-valued bool": {
-			got:              zero["bool"],
-			wantAssertPassed: true,
+		{
+			name: "should pass when get zero-valued bool",
+			args: args{
+				got: zero["bool"],
+			},
+			want: true,
 		},
-		"should fail when get true bool": {
-			got:              true,
-			wantAssertPassed: false,
+		{
+			name: "should fail when get true bool",
+			args: args{
+				got: true,
+			},
+			want: false,
 		},
-		"should pass when get zero-valued byte": {
-			got:              zero["byte"],
-			wantAssertPassed: true,
+		{
+			name: "should pass when get zero-valued byte",
+			args: args{
+				got: zero["byte"],
+			},
+			want: true,
 		},
-		"should fail when get non-zero-valued byte": {
-			got:              nonZero["byte"],
-			wantAssertPassed: false,
+		{
+			name: "should fail when get non-zero-valued byte",
+			args: args{
+				got: nonZero["byte"],
+			},
+			want: false,
 		},
-		"should pass when get empty chan": {
-			got:              zero["chan"],
-			wantAssertPassed: true,
+		{
+			name: "should pass when get empty chan",
+			args: args{
+				got: zero["chan"],
+			},
+			want: true,
 		},
-		"should fail when get non-empty chan": {
-			got:              nonEmptyChan,
-			wantAssertPassed: false,
+		{
+			name: "should fail when get non-empty chan",
+			args: args{
+				got: nonEmptyChan,
+			},
+			want: false,
 		},
-		"should pass when get zero-valued complex64": {
-			got:              zero["complex64"],
-			wantAssertPassed: true,
+		{
+			name: "should pass when get zero-valued complex64",
+			args: args{
+				got: zero["complex64"],
+			},
+			want: true,
 		},
-		"should fail when get non-zero-valued complex64": {
-			got:              nonZero["complex64"],
-			wantAssertPassed: false,
+		{
+			name: "should fail when get non-zero-valued complex64",
+			args: args{
+				got: nonZero["complex64"],
+			},
+			want: false,
 		},
-		"should pass when get zero-valued complex128": {
-			got:              zero["complex128"],
-			wantAssertPassed: true,
+		{
+			name: "should pass when get zero-valued complex128",
+			args: args{
+				got: zero["complex128"],
+			},
+			want: true,
 		},
-		"should fail when get non-zero-valued complex128": {
-			got:              nonZero["complex128"],
-			wantAssertPassed: false,
+		{
+			name: "should fail when get non-zero-valued complex128",
+			args: args{
+				got: nonZero["complex128"],
+			},
+			want: false,
 		},
-		"should pass when get zero-valued float32": {
-			got:              zero["float32"],
-			wantAssertPassed: true,
+		{
+			name: "should pass when get zero-valued float32",
+			args: args{
+				got: zero["float32"],
+			},
+			want: true,
 		},
-		"should fail when get non-zero-valued float32": {
-			got:              nonZero["float32"],
-			wantAssertPassed: false,
+		{
+			name: "should fail when get non-zero-valued float32",
+			args: args{
+				got: nonZero["float32"],
+			},
+			want: false,
 		},
-		"should pass when get zero-valued func": {
-			got:              zero["func"],
-			wantAssertPassed: true,
+		{
+			name: "should pass when get zero-valued func",
+			args: args{
+				got: zero["func"],
+			},
+			want: true,
 		},
-		"should fail when get non-zero-valued func": {
-			got:              nonZero["func"],
-			wantAssertPassed: false,
+		{
+			name: "should fail when get non-zero-valued func",
+			args: args{
+				got: nonZero["func"],
+			},
+			want: false,
 		},
-		"should pass when get zero-valued int": {
-			got:              zero["int"],
-			wantAssertPassed: true,
+		{
+			name: "should pass when get zero-valued int",
+			args: args{
+				got: zero["int"],
+			},
+			want: true,
 		},
-		"should fail when get non-zero-valued int": {
-			got:              nonZero["int"],
-			wantAssertPassed: false,
+		{
+			name: "should fail when get non-zero-valued int",
+			args: args{
+				got: nonZero["int"],
+			},
+			want: false,
 		},
-		"should pass when get zero-valued interface": {
-			got:              zero["interface"],
-			wantAssertPassed: true,
+		{
+			name: "should pass when get zero-valued interface",
+			args: args{
+				got: zero["interface"],
+			},
+			want: true,
 		},
-		"should fail when get non-zero-valued interface": {
-			got:              nonZero["interface"],
-			wantAssertPassed: false,
+		{
+			name: "should fail when get non-zero-valued interface",
+			args: args{
+				got: nonZero["interface"],
+			},
+			want: false,
 		},
-		"should pass when get zero-valued map": {
-			got:              zero["map"],
-			wantAssertPassed: true,
+		{
+			name: "should pass when get zero-valued map",
+			args: args{
+				got: zero["map"],
+			},
+			want: true,
 		},
-		"should fail when get non-zero-valued map": {
-			got:              nonZero["map"],
-			wantAssertPassed: false,
+		{
+			name: "should fail when get non-zero-valued map",
+			args: args{
+				got: nonZero["map"],
+			},
+			want: false,
 		},
-		"should pass when get zero-valued ptr": {
-			got:              zero["ptr"],
-			wantAssertPassed: true,
+		{
+			name: "should pass when get zero-valued ptr",
+			args: args{
+				got: zero["ptr"],
+			},
+			want: true,
 		},
-		"should fail when get non-zero-valued ptr": {
-			got:              nonZero["ptr"],
-			wantAssertPassed: false,
+		{
+			name: "should fail when get non-zero-valued ptr",
+			args: args{
+				got: nonZero["ptr"],
+			},
+			want: false,
 		},
-		"should pass when get nil slice": {
-			got:              zero["slice"],
-			wantAssertPassed: true,
+		{
+			name: "should pass when get nil slice",
+			args: args{
+				got: zero["slice"],
+			},
+			want: true,
 		},
-		"should pass when get empty slice": {
-			got:              []int{},
-			wantAssertPassed: true,
+		{
+			name: "should pass when get empty slice",
+			args: args{
+				got: []int{},
+			},
+			want: true,
 		},
-		"should fail when get non-zero-valued slice": {
-			got:              nonZero["slice"],
-			wantAssertPassed: false,
+		{
+			name: "should fail when get non-zero-valued slice",
+			args: args{
+				got: nonZero["slice"],
+			},
+			want: false,
 		},
-		"should pass when get zero-valued string": {
-			got:              zero["string"],
-			wantAssertPassed: true,
+		{
+			name: "should pass when get zero-valued string",
+			args: args{
+				got: zero["string"],
+			},
+			want: true,
 		},
-		"should fail when get non-zero-valued string": {
-			got:              nonZero["string"],
-			wantAssertPassed: false,
+		{
+			name: "should fail when get non-zero-valued string",
+			args: args{
+				got: nonZero["string"],
+			},
+			want: false,
 		},
-		"should pass when get zero-valued struct": {
-			got:              zero["struct"],
-			wantAssertPassed: true,
+		{
+			name: "should pass when get zero-valued struct",
+			args: args{
+				got: zero["struct"],
+			},
+			want: true,
 		},
-		"should fail when get non-zero-valued struct": {
-			got:              nonZero["struct"],
-			wantAssertPassed: false,
+		{
+			name: "should fail when get non-zero-valued struct",
+			args: args{
+				got: nonZero["struct"],
+			},
+			want: false,
 		},
 	}
 
 	t.Parallel()
-	for name, tc := range testcases {
-		tc := tc
-		t.Run(name, func(subT *testing.T) {
-			// given
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			// Given
 			dummyT := &testing.T{}
-			assert := New(dummyT)
+			dummyAssert := New(dummyT)
+			assert := New(t)
 
-			// when
-			assert(tc.got).IsEmpty()
+			// When
+			got := dummyAssert(tt.args.got).IsEmpty()
 
-			// then
-			gotAssertPassed := !dummyT.Failed()
-			if gotAssertPassed == tc.wantAssertPassed {
-				return
-			}
-			subT.Errorf("expected assert(%#v).IsEmpty() to be %v, found %v", tc.got, tc.wantAssertPassed, gotAssertPassed)
+			// Then
+			assert(got).Equals(tt.want)
+			assert(dummyT.Failed()).Equals(!tt.want)
 		})
 	}
 }
 
 func TestIsFunction(t *testing.T) {
-	testCases := map[string]struct {
-		got              interface{}
-		wantAssertPassed bool
+	type args struct {
+		got interface{}
+	}
+	tests := []struct {
+		name string
+		args args
+		want bool
 	}{
-		"should fail when get array": {
-			got:              nonZero["array"],
-			wantAssertPassed: false,
+		{
+			name: "should fail when get array",
+			args: args{
+				got: nonZero["array"],
+			},
+			want: false,
 		},
-		"should fail when get bool": {
-			got:              nonZero["bool"],
-			wantAssertPassed: false,
+		{
+			name: "should fail when get bool",
+			args: args{
+				got: nonZero["bool"],
+			},
+			want: false,
 		},
-		"should fail when get byte": {
-			got:              nonZero["byte"],
-			wantAssertPassed: false,
+		{
+			name: "should fail when get byte",
+			args: args{
+				got: nonZero["byte"],
+			},
+			want: false,
 		},
-		"should fail when get chan": {
-			got:              nonZero["chan"],
-			wantAssertPassed: false,
+		{
+			name: "should fail when get chan",
+			args: args{
+				got: nonZero["chan"],
+			},
+			want: false,
 		},
-		"should fail when get complex64": {
-			got:              nonZero["complex64"],
-			wantAssertPassed: false,
+		{
+			name: "should fail when get complex64",
+			args: args{
+				got: nonZero["complex64"],
+			},
+			want: false,
 		},
-		"should fail when get complex128": {
-			got:              nonZero["complex128"],
-			wantAssertPassed: false,
+		{
+			name: "should fail when get complex128",
+			args: args{
+				got: nonZero["complex128"],
+			},
+			want: false,
 		},
-		"should fail when get float32": {
-			got:              nonZero["float32"],
-			wantAssertPassed: false,
+		{
+			name: "should fail when get float32",
+			args: args{
+				got: nonZero["float32"],
+			},
+			want: false,
 		},
-		"should pass when get zero-valued func": {
-			got:              zero["func"],
-			wantAssertPassed: true,
+		{
+			name: "should pass when get zero-valued func",
+			args: args{
+				got: zero["func"],
+			},
+			want: true,
 		},
-		"should pass when get non-zero-valued func": {
-			got:              nonZero["func"],
-			wantAssertPassed: true,
+		{
+			name: "should pass when get non-zero-valued func",
+			args: args{
+				got: nonZero["func"],
+			},
+			want: true,
 		},
-		"should fail when get int": {
-			got:              nonZero["int"],
-			wantAssertPassed: false,
+		{
+			name: "should fail when get int",
+			args: args{
+				got: nonZero["int"],
+			},
+			want: false,
 		},
-		"should fail when get interface": {
-			got:              nonZero["interface"],
-			wantAssertPassed: false,
+		{
+			name: "should fail when get interface",
+			args: args{
+				got: nonZero["interface"],
+			},
+			want: false,
 		},
-		"should fail when get map": {
-			got:              nonZero["map"],
-			wantAssertPassed: false,
+		{
+			name: "should fail when get map",
+			args: args{
+				got: nonZero["map"],
+			},
+			want: false,
 		},
-		"should fail when get ptr": {
-			got:              nonZero["ptr"],
-			wantAssertPassed: false,
+		{
+			name: "should fail when get ptr",
+			args: args{
+				got: nonZero["ptr"],
+			},
+			want: false,
 		},
-		"should fail when get slice": {
-			got:              nonZero["slice"],
-			wantAssertPassed: false,
+		{
+			name: "should fail when get slice",
+			args: args{
+				got: nonZero["slice"],
+			},
+			want: false,
 		},
-		"should fail when get string": {
-			got:              nonZero["string"],
-			wantAssertPassed: false,
+		{
+			name: "should fail when get string",
+			args: args{
+				got: nonZero["string"],
+			},
+			want: false,
 		},
-		"should fail when get struct": {
-			got:              nonZero["struct"],
-			wantAssertPassed: false,
+		{
+			name: "should fail when get struct",
+			args: args{
+				got: nonZero["struct"],
+			},
+			want: false,
 		},
-		"should fail when get nil": {
-			got:              nil,
-			wantAssertPassed: false,
+		{
+			name: "should fail when get nil",
+			args: args{
+				got: nil,
+			},
+			want: false,
 		},
 	}
 
 	t.Parallel()
-	for name, tc := range testCases {
-		tc := tc
-		t.Run(name, func(subT *testing.T) {
-			// given
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			// Given
 			dummyT := &testing.T{}
-			assert := New(dummyT)
+			dummyAssert := New(dummyT)
+			assert := New(t)
 
-			// when
-			assert(tc.got).IsFunction()
+			// When
+			got := dummyAssert(tt.args.got).IsFunction()
 
-			// then
-			gotAssertPassed := !dummyT.Failed()
-			if gotAssertPassed == tc.wantAssertPassed {
-				return
-			}
-			subT.Errorf("expected assert(%#v).IsFunction() to be %v, found %v", tc.got, tc.wantAssertPassed, gotAssertPassed)
+			// Then
+			assert(got).Equals(tt.want)
+			assert(dummyT.Failed()).Equals(!tt.want)
 		})
 	}
 }
 
 func TestIsNil(t *testing.T) {
-	testCases := map[string]struct {
-		got              interface{}
-		wantAssertPassed bool
+	type args struct {
+		got interface{}
+	}
+	tests := []struct {
+		name string
+		args args
+		want bool
 	}{
-		"should fail when get non-nilable": {
-			got:              nonZero["byte"],
-			wantAssertPassed: false,
+		{
+			name: "should fail when get non-nilable",
+			args: args{
+				got: nonZero["byte"],
+			},
+			want: false,
 		},
-		"should fail when get non-nil chan": {
-			got:              nonZero["chan"],
-			wantAssertPassed: false,
+		{
+			name: "should fail when get non-nil chan",
+			args: args{
+				got: nonZero["chan"],
+			},
+			want: false,
 		},
-		"should pass when get nil chan": {
-			got:              zero["chan"],
-			wantAssertPassed: true,
+		{
+			name: "should pass when get nil chan",
+			args: args{
+				got: zero["chan"],
+			},
+			want: true,
 		},
-		"should fail when get non-nil func": {
-			got:              nonZero["func"],
-			wantAssertPassed: false,
+		{
+			name: "should fail when get non-nil func",
+			args: args{
+				got: nonZero["func"],
+			},
+			want: false,
 		},
-		"should pass when get nil func": {
-			got:              zero["func"],
-			wantAssertPassed: true,
+		{
+			name: "should pass when get nil func",
+			args: args{
+				got: zero["func"],
+			},
+			want: true,
 		},
-		"should fail when get non-nil map": {
-			got:              nonZero["map"],
-			wantAssertPassed: false,
+		{
+			name: "should fail when get non-nil map",
+			args: args{
+				got: nonZero["map"],
+			},
+			want: false,
 		},
-		"should pass when get nil map": {
-			got:              zero["map"],
-			wantAssertPassed: true,
+		{
+			name: "should pass when get nil map",
+			args: args{
+				got: zero["map"],
+			},
+			want: true,
 		},
-		"should fail when get non-nil interface": {
-			got:              nonZero["interface"],
-			wantAssertPassed: false,
+		{
+			name: "should fail when get non-nil interface",
+			args: args{
+				got: nonZero["interface"],
+			},
+			want: false,
 		},
-		"should pass when get nil interface": {
-			got:              zero["interface"],
-			wantAssertPassed: true,
+		{
+			name: "should pass when get nil interface",
+			args: args{
+				got: zero["interface"],
+			},
+			want: true,
 		},
-		"should fail when get non-nil pointer": {
-			got:              nonZero["ptr"],
-			wantAssertPassed: false,
+		{
+			name: "should fail when get non-nil pointer",
+			args: args{
+				got: nonZero["ptr"],
+			},
+			want: false,
 		},
-		"should pass when get nil pointer": {
-			got:              zero["ptr"],
-			wantAssertPassed: true,
+		{
+			name: "should pass when get nil pointer",
+			args: args{
+				got: zero["ptr"],
+			},
+			want: true,
 		},
-		"should fail when get non-nil slice": {
-			got:              nonZero["slice"],
-			wantAssertPassed: false,
+		{
+			name: "should fail when get non-nil slice",
+			args: args{
+				got: nonZero["slice"],
+			},
+			want: false,
 		},
-		"should pass when get nil slice": {
-			got:              zero["slice"],
-			wantAssertPassed: true,
+		{
+			name: "should pass when get nil slice",
+			args: args{
+				got: zero["slice"],
+			},
+			want: true,
 		},
 	}
 
 	t.Parallel()
-	for name, tc := range testCases {
-		tc := tc
-		t.Run(name, func(subT *testing.T) {
-			// given
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			// Given
 			dummyT := &testing.T{}
-			assert := New(dummyT)
+			dummyAssert := New(dummyT)
+			assert := New(t)
 
-			// when
-			assert(tc.got).IsNil()
+			// When
+			got := dummyAssert(tt.args.got).IsNil()
 
-			// then
-			gotAssertPassed := !dummyT.Failed()
-			if gotAssertPassed == tc.wantAssertPassed {
-				return
-			}
-			subT.Errorf("expected assert(%#v).IsNil() to be %v, found %v", tc.got, tc.wantAssertPassed, gotAssertPassed)
+			// Then
+			assert(got).Equals(tt.want)
+			assert(dummyT.Failed()).Equals(!tt.want)
 		})
 	}
 }
@@ -630,440 +929,635 @@ func TestIsNil(t *testing.T) {
 func TestIsNotEmpty(t *testing.T) {
 	nonEmptyChan := make(chan int, 10)
 	nonEmptyChan <- 4
-	testcases := map[string]struct {
-		got              interface{}
-		wantAssertPassed bool
+
+	type args struct {
+		got interface{}
+	}
+	tests := []struct {
+		name string
+		args args
+		want bool
 	}{
-		"should fail when get empty array": {
-			got:              [0]int{},
-			wantAssertPassed: false,
+		{
+			name: "should fail when get empty array",
+			args: args{
+				got: [0]int{},
+			},
+			want: false,
 		},
-		"should pass when get non-empty array": {
-			got:              zero["array"],
-			wantAssertPassed: true,
+		{
+			name: "should pass when get non-empty array",
+			args: args{
+				got: zero["array"],
+			},
+			want: true,
 		},
-		"should fail when get zero-valued bool": {
-			got:              zero["bool"],
-			wantAssertPassed: false,
+		{
+			name: "should fail when get zero-valued bool",
+			args: args{
+				got: zero["bool"],
+			},
+			want: false,
 		},
-		"should pass when get true bool": {
-			got:              true,
-			wantAssertPassed: true,
+		{
+			name: "should pass when get true bool",
+			args: args{
+				got: true,
+			},
+			want: true,
 		},
-		"should fail when get zero-valued byte": {
-			got:              zero["byte"],
-			wantAssertPassed: false,
+		{
+			name: "should fail when get zero-valued byte",
+			args: args{
+				got: zero["byte"],
+			},
+			want: false,
 		},
-		"should pass when get non-zero-valued byte": {
-			got:              nonZero["byte"],
-			wantAssertPassed: true,
+		{
+			name: "should pass when get non-zero-valued byte",
+			args: args{
+				got: nonZero["byte"],
+			},
+			want: true,
 		},
-		"should fail when get empty chan": {
-			got:              zero["chan"],
-			wantAssertPassed: false,
+		{
+			name: "should fail when get empty chan",
+			args: args{
+				got: zero["chan"],
+			},
+			want: false,
 		},
-		"should pass when get non-empty chan": {
-			got:              nonEmptyChan,
-			wantAssertPassed: true,
+		{
+			name: "should pass when get non-empty chan",
+			args: args{
+				got: nonEmptyChan,
+			},
+			want: true,
 		},
-		"should fail when get zero-valued complex64": {
-			got:              zero["complex64"],
-			wantAssertPassed: false,
+		{
+			name: "should fail when get zero-valued complex64",
+			args: args{
+				got: zero["complex64"],
+			},
+			want: false,
 		},
-		"should pass when get non-zero-valued complex64": {
-			got:              nonZero["complex64"],
-			wantAssertPassed: true,
+		{
+			name: "should pass when get non-zero-valued complex64",
+			args: args{
+				got: nonZero["complex64"],
+			},
+			want: true,
 		},
-		"should fail when get zero-valued complex128": {
-			got:              zero["complex128"],
-			wantAssertPassed: false,
+		{
+			name: "should fail when get zero-valued complex128",
+			args: args{
+				got: zero["complex128"],
+			},
+			want: false,
 		},
-		"should pass when get non-zero-valued complex128": {
-			got:              nonZero["complex128"],
-			wantAssertPassed: true,
+		{
+			name: "should pass when get non-zero-valued complex128",
+			args: args{
+				got: nonZero["complex128"],
+			},
+			want: true,
 		},
-		"should fail when get zero-valued float32": {
-			got:              zero["float32"],
-			wantAssertPassed: false,
+		{
+			name: "should fail when get zero-valued float32",
+			args: args{
+				got: zero["float32"],
+			},
+			want: false,
 		},
-		"should pass when get non-zero-valued float32": {
-			got:              nonZero["float32"],
-			wantAssertPassed: true,
+		{
+			name: "should pass when get non-zero-valued float32",
+			args: args{
+				got: nonZero["float32"],
+			},
+			want: true,
 		},
-		"should fail when get zero-valued func": {
-			got:              zero["func"],
-			wantAssertPassed: false,
+		{
+			name: "should fail when get zero-valued func",
+			args: args{
+				got: zero["func"],
+			},
+			want: false,
 		},
-		"should pass when get non-zero-valued func": {
-			got:              nonZero["func"],
-			wantAssertPassed: true,
+		{
+			name: "should pass when get non-zero-valued func",
+			args: args{
+				got: nonZero["func"],
+			},
+			want: true,
 		},
-		"should fail when get zero-valued int": {
-			got:              zero["int"],
-			wantAssertPassed: false,
+		{
+			name: "should fail when get zero-valued int",
+			args: args{
+				got: zero["int"],
+			},
+			want: false,
 		},
-		"should pass when get non-zero-valued int": {
-			got:              nonZero["int"],
-			wantAssertPassed: true,
+		{
+			name: "should pass when get non-zero-valued int",
+			args: args{
+				got: nonZero["int"],
+			},
+			want: true,
 		},
-		"should fail when get zero-valued interface": {
-			got:              zero["interface"],
-			wantAssertPassed: false,
+		{
+			name: "should fail when get zero-valued interface",
+			args: args{
+				got: zero["interface"],
+			},
+			want: false,
 		},
-		"should pass when get non-zero-valued interface": {
-			got:              nonZero["interface"],
-			wantAssertPassed: true,
+		{
+			name: "should pass when get non-zero-valued interface",
+			args: args{
+				got: nonZero["interface"],
+			},
+			want: true,
 		},
-		"should fail when get zero-valued map": {
-			got:              zero["map"],
-			wantAssertPassed: false,
+		{
+			name: "should fail when get zero-valued map",
+			args: args{
+				got: zero["map"],
+			},
+			want: false,
 		},
-		"should pass when get non-zero-valued map": {
-			got:              nonZero["map"],
-			wantAssertPassed: true,
+		{
+			name: "should pass when get non-zero-valued map",
+			args: args{
+				got: nonZero["map"],
+			},
+			want: true,
 		},
-		"should fail when get zero-valued ptr": {
-			got:              zero["ptr"],
-			wantAssertPassed: false,
+		{
+			name: "should fail when get zero-valued ptr",
+			args: args{
+				got: zero["ptr"],
+			},
+			want: false,
 		},
-		"should pass when get non-zero-valued ptr": {
-			got:              nonZero["ptr"],
-			wantAssertPassed: true,
+		{
+			name: "should pass when get non-zero-valued ptr",
+			args: args{
+				got: nonZero["ptr"],
+			},
+			want: true,
 		},
-		"should fail when get nil slice": {
-			got:              zero["slice"],
-			wantAssertPassed: false,
+		{
+			name: "should fail when get nil slice",
+			args: args{
+				got: zero["slice"],
+			},
+			want: false,
 		},
-		"should fail when get empty slice": {
-			got:              []int{},
-			wantAssertPassed: false,
+		{
+			name: "should fail when get empty slice",
+			args: args{
+				got: []int{},
+			},
+			want: false,
 		},
-		"should pass when get non-zero-valued slice": {
-			got:              nonZero["slice"],
-			wantAssertPassed: true,
+		{
+			name: "should pass when get non-zero-valued slice",
+			args: args{
+				got: nonZero["slice"],
+			},
+			want: true,
 		},
-		"should fail when get zero-valued string": {
-			got:              zero["string"],
-			wantAssertPassed: false,
+		{
+			name: "should fail when get zero-valued string",
+			args: args{
+				got: zero["string"],
+			},
+			want: false,
 		},
-		"should pass when get non-zero-valued string": {
-			got:              nonZero["string"],
-			wantAssertPassed: true,
+		{
+			name: "should pass when get non-zero-valued string",
+			args: args{
+				got: nonZero["string"],
+			},
+			want: true,
 		},
-		"should fail when get zero-valued struct": {
-			got:              zero["struct"],
-			wantAssertPassed: false,
+		{
+			name: "should fail when get zero-valued struct",
+			args: args{
+				got: zero["struct"],
+			},
+			want: false,
 		},
-		"should pass when get non-zero-valued struct": {
-			got:              nonZero["struct"],
-			wantAssertPassed: true,
+		{
+			name: "should pass when get non-zero-valued struct",
+			args: args{
+				got: nonZero["struct"],
+			},
+			want: true,
 		},
 	}
 
 	t.Parallel()
-	for name, tc := range testcases {
-		tc := tc
-		t.Run(name, func(subT *testing.T) {
-			// given
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			// Given
 			dummyT := &testing.T{}
-			assert := New(dummyT)
+			dummyAssert := New(dummyT)
+			assert := New(t)
 
-			// when
-			assert(tc.got).IsNotEmpty()
+			// When
+			got := dummyAssert(tt.args.got).IsNotEmpty()
 
-			// then
-			gotAssertPassed := !dummyT.Failed()
-			if gotAssertPassed == tc.wantAssertPassed {
-				return
-			}
-			subT.Errorf("expected assert(%#v).IsNotEmpty() to be %v, found %v", tc.got, tc.wantAssertPassed, gotAssertPassed)
+			// Then
+			assert(got).Equals(tt.want)
+			assert(dummyT.Failed()).Equals(!tt.want)
 		})
 	}
 }
 
 func TestIsNotNil(t *testing.T) {
-	testCases := map[string]struct {
-		got              interface{}
-		wantAssertPassed bool
+	type args struct {
+		got interface{}
+	}
+	tests := []struct {
+		name string
+		args args
+		want bool
 	}{
-		"should pass when get non-nilable": {
-			got:              nonZero["int"],
-			wantAssertPassed: true,
+		{
+			name: "should pass when get non-nilable",
+			args: args{
+				got: nonZero["int"],
+			},
+			want: true,
 		},
-		"should pass when get non-nil chan": {
-			got:              nonZero["chan"],
-			wantAssertPassed: true,
+		{
+			name: "should pass when get non-nil chan",
+			args: args{
+				got: nonZero["chan"],
+			},
+			want: true,
 		},
-		"should fail when get nil chan": {
-			got:              zero["chan"],
-			wantAssertPassed: false,
+		{
+			name: "should fail when get nil chan",
+			args: args{
+				got: zero["chan"],
+			},
+			want: false,
 		},
-		"should pass when get non-nil func": {
-			got:              nonZero["func"],
-			wantAssertPassed: true,
+		{
+			name: "should pass when get non-nil func",
+			args: args{
+				got: nonZero["func"],
+			},
+			want: true,
 		},
-		"should fail when get nil func": {
-			got:              zero["func"],
-			wantAssertPassed: false,
+		{
+			name: "should fail when get nil func",
+			args: args{
+				got: zero["func"],
+			},
+			want: false,
 		},
-		"should pass when get non-nil map": {
-			got:              nonZero["map"],
-			wantAssertPassed: true,
+		{
+			name: "should pass when get non-nil map",
+			args: args{
+				got: nonZero["map"],
+			},
+			want: true,
 		},
-		"should fail when get nil map": {
-			got:              zero["map"],
-			wantAssertPassed: false,
+		{
+			name: "should fail when get nil map",
+			args: args{
+				got: zero["map"],
+			},
+			want: false,
 		},
-		"should pass when get non-nil interface": {
-			got:              nonZero["interface"],
-			wantAssertPassed: true,
+		{
+			name: "should pass when get non-nil interface",
+			args: args{
+				got: nonZero["interface"],
+			},
+			want: true,
 		},
-		"should fail when get nil interface": {
-			got:              zero["interface"],
-			wantAssertPassed: false,
+		{
+			name: "should fail when get nil interface",
+			args: args{
+				got: zero["interface"],
+			},
+			want: false,
 		},
-		"should pass when get non-nil pointer": {
-			got:              nonZero["ptr"],
-			wantAssertPassed: true,
+		{
+			name: "should pass when get non-nil pointer",
+			args: args{
+				got: nonZero["ptr"],
+			},
+			want: true,
 		},
-		"should fail when get nil pointer": {
-			got:              zero["ptr"],
-			wantAssertPassed: false,
+		{
+			name: "should fail when get nil pointer",
+			args: args{
+				got: zero["ptr"],
+			},
+			want: false,
 		},
-		"should pass when get non-nil slice": {
-			got:              nonZero["slice"],
-			wantAssertPassed: true,
+		{
+			name: "should pass when get non-nil slice",
+			args: args{
+				got: nonZero["slice"],
+			},
+			want: true,
 		},
-		"should fail when get nil slice": {
-			got:              zero["slice"],
-			wantAssertPassed: false,
+		{
+			name: "should fail when get nil slice",
+			args: args{
+				got: zero["slice"],
+			},
+			want: false,
 		},
 	}
 
 	t.Parallel()
-	for name, tc := range testCases {
-		tc := tc
-		t.Run(name, func(subT *testing.T) {
-			// given
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			// Given
 			dummyT := &testing.T{}
-			assert := New(dummyT)
+			dummyAssert := New(dummyT)
+			assert := New(t)
 
-			// when
-			assert(tc.got).IsNotNil()
+			// When
+			got := dummyAssert(tt.args.got).IsNotNil()
 
-			// then
-			gotAssertPassed := !dummyT.Failed()
-			if gotAssertPassed == tc.wantAssertPassed {
-				return
-			}
-			subT.Errorf("expected assert(%#v).IsNotNil() to be %v, found %v", tc.got, tc.wantAssertPassed, gotAssertPassed)
+			// Then
+			assert(got).Equals(tt.want)
+			assert(dummyT.Failed()).Equals(!tt.want)
 		})
 	}
 }
 
 func TestIsTrue(t *testing.T) {
-	testCases := map[string]struct {
-		got              interface{}
-		wantAssertPassed bool
+	type args struct {
+		got interface{}
+	}
+	tests := []struct {
+		name string
+		args args
+		want bool
 	}{
-		"should fail when get nil": {
-			got:              nil,
-			wantAssertPassed: false,
+		{
+			name: "should fail when get nil",
+			args: args{
+				got: nil,
+			},
+			want: false,
 		},
-		"should fail when get non-bool": {
-			got:              nonZero["int"],
-			wantAssertPassed: false,
+		{
+			name: "should fail when get non-bool",
+			args: args{
+				got: nonZero["int"],
+			},
+			want: false,
 		},
-		"should pass when get true bool": {
-			got:              nonZero["bool"],
-			wantAssertPassed: true,
+		{
+			name: "should pass when get true bool",
+			args: args{
+				got: nonZero["bool"],
+			},
+			want: true,
 		},
-		"should fail when get false bool": {
-			got:              zero["bool"],
-			wantAssertPassed: false,
+		{
+			name: "should fail when get false bool",
+			args: args{
+				got: zero["bool"],
+			},
+			want: false,
 		},
 	}
 
-	t.Parallel()
-	for name, tc := range testCases {
-		tc := tc
-		t.Run(name, func(subT *testing.T) {
-			// given
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			// Given
 			dummyT := &testing.T{}
-			assert := New(dummyT)
+			dummyAssert := New(dummyT)
+			assert := New(t)
 
-			// when
-			assert(tc.got).IsTrue()
+			// When
+			got := dummyAssert(tt.args.got).IsTrue()
 
-			// then
-			gotAssertPassed := !dummyT.Failed()
-			if gotAssertPassed == tc.wantAssertPassed {
-				return
-			}
-			subT.Errorf("expected assert(%#v).IsTrue() to be %v, found %v", tc.got, tc.wantAssertPassed, gotAssertPassed)
+			// Then
+			assert(got).Equals(tt.want)
+			assert(dummyT.Failed()).Equals(!tt.want)
 		})
 	}
 }
 
 func TestIsFalse(t *testing.T) {
-	testCases := map[string]struct {
-		got              interface{}
-		wantAssertPassed bool
+	type args struct {
+		got interface{}
+	}
+	tests := []struct {
+		name string
+		args args
+		want bool
 	}{
-		"should fail when get nil": {
-			got:              nil,
-			wantAssertPassed: false,
+		{
+			name: "should fail when get nil",
+			args: args{
+				got: nil,
+			},
+			want: false,
 		},
-		"should fail when get non-bool": {
-			got:              nonZero["int"],
-			wantAssertPassed: false,
+		{
+			name: "should fail when get non-bool",
+			args: args{
+				got: nonZero["int"],
+			},
+			want: false,
 		},
-		"should fail when get true bool": {
-			got:              nonZero["bool"],
-			wantAssertPassed: false,
+		{
+			name: "should fail when get true bool",
+			args: args{
+				got: nonZero["bool"],
+			},
+			want: false,
 		},
-		"should pass when get false bool": {
-			got:              zero["bool"],
-			wantAssertPassed: true,
+		{
+			name: "should pass when get false bool",
+			args: args{
+				got: zero["bool"],
+			},
+			want: true,
 		},
 	}
 
-	t.Parallel()
-	for name, tc := range testCases {
-		tc := tc
-		t.Run(name, func(subT *testing.T) {
-			// given
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			// Given
 			dummyT := &testing.T{}
-			assert := New(dummyT)
+			dummyAssert := New(dummyT)
+			assert := New(t)
 
-			// when
-			assert(tc.got).IsFalse()
+			// When
+			got := dummyAssert(tt.args.got).IsFalse()
 
-			// then
-			gotAssertPassed := !dummyT.Failed()
-			if gotAssertPassed == tc.wantAssertPassed {
-				return
-			}
-			subT.Errorf("expected assert(%#v).IsFalse() to be %v, found %v", tc.got, tc.wantAssertPassed, gotAssertPassed)
+			// Then
+			assert(got).Equals(tt.want)
+			assert(dummyT.Failed()).Equals(!tt.want)
 		})
 	}
 }
 
 func TestIsPointerWithSameAddressAs(t *testing.T) {
-	testCases := map[string]struct {
-		got              interface{}
-		want             interface{}
-		wantAssertPassed bool
+	type args struct {
+		got  interface{}
+		want interface{}
+	}
+	tests := []struct {
+		name string
+		args args
+		want bool
 	}{
-		"should fail when get nil": {
-			got:              nil,
-			want:             nonZero["ptr"],
-			wantAssertPassed: false,
+		{
+			name: "should fail when get nil",
+			args: args{
+				got:  nil,
+				want: nonZero["ptr"],
+			},
+			want: false,
 		},
-		"should fail when want nil": {
-			got:              nonZero["ptr"],
-			want:             nil,
-			wantAssertPassed: false,
+		{
+			name: "should fail when want nil",
+			args: args{
+				got:  nonZero["ptr"],
+				want: nil,
+			},
+			want: false,
 		},
-		"should fail when get non-pointer": {
-			got:              nonZero["string"],
-			want:             &struct{}{},
-			wantAssertPassed: false,
+		{
+			name: "should fail when get non-pointer",
+			args: args{
+				got:  nonZero["string"],
+				want: &struct{}{},
+			},
+			want: false,
 		},
-		"should fail when get pointer that points to another address": {
-			got:              nonZero["ptr"],
-			want:             &struct{}{},
-			wantAssertPassed: false,
+		{
+			name: "should fail when get pointer that points to another address",
+			args: args{
+				got:  nonZero["ptr"],
+				want: &struct{}{},
+			},
+			want: false,
 		},
-		"should pass when want and get pointer that points to same address": {
-			got:              nonZero["ptr"],
-			want:             nonZero["ptr"],
-			wantAssertPassed: true,
+		{
+			name: "should pass when want and get pointer that points to same address",
+			args: args{
+				got:  nonZero["ptr"],
+				want: nonZero["ptr"],
+			},
+			want: true,
 		},
 	}
 
 	t.Parallel()
-	for name, tc := range testCases {
-		tc := tc
-		t.Run(name, func(t *testing.T) {
-			// given
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			// Given
 			dummyT := &testing.T{}
-			assert := New(dummyT)
+			dummyAssert := New(dummyT)
+			assert := New(t)
 
-			// when
-			assert(tc.got).IsPointerWithSameAddressAs(tc.want)
+			// When
+			got := dummyAssert(tt.args.got).IsPointerWithSameAddressAs(tt.args.want)
 
-			// then
-			gotAssertPassed := !dummyT.Failed()
-			if gotAssertPassed == tc.wantAssertPassed {
-				return
-			}
-			t.Errorf("expected assert(%p).IsPointerWithSameAddressAs(%p) to be %v, found %v", tc.got, tc.want, tc.wantAssertPassed, gotAssertPassed)
+			// Then
+			assert(got).Equals(tt.want)
+			assert(dummyT.Failed()).Equals(!tt.want)
 		})
 	}
 }
 
 func TestNotEquals(t *testing.T) {
-	// given
-	testCases := map[string]struct {
-		got              interface{}
-		want             interface{}
-		wantAssertPassed bool
+	type args struct {
+		got  interface{}
+		want interface{}
+	}
+	tests := []struct {
+		name string
+		args args
+		want bool
 	}{
-		"should fail for identical nil args": {
-			got:              nil,
-			want:             nil,
-			wantAssertPassed: false,
+		{
+			name: "should fail for identical nil args",
+			args: args{
+				got:  nil,
+				want: nil,
+			},
+			want: false,
 		},
-		"should fail for equal comparable non-nil args": {
-			got:              nonZero["int"],
-			want:             nonZero["int"],
-			wantAssertPassed: false,
+		{
+			name: "should fail for equal comparable non-nil args",
+			args: args{
+				got:  nonZero["int"],
+				want: nonZero["int"],
+			},
+			want: false,
 		},
-		"should pass when want non-nil, but get nil": {
-			got:              nil,
-			want:             nonZero["int"],
-			wantAssertPassed: true,
+		{
+			name: "should pass when want non-nil, but get nil",
+			args: args{
+				got:  nil,
+				want: nonZero["int"],
+			},
+			want: true,
 		},
-		"should pass when want nil, but get comparable non-nil": {
-			got:              nonZero["struct"],
-			want:             nil,
-			wantAssertPassed: true,
+		{
+			name: "should pass when want nil, but get comparable non-nil",
+			args: args{
+				got:  nonZero["struct"],
+				want: nil,
+			},
+			want: true,
 		},
-		"should fail when want comparable non-nil, but get non-comparable func": {
-			got:              nonZero["func"],
-			want:             nonZero["int"],
-			wantAssertPassed: false,
+		{
+			name: "should fail when want comparable non-nil, but get non-comparable func",
+			args: args{
+				got:  nonZero["func"],
+				want: nonZero["int"],
+			},
+			want: false,
 		},
-		"should fail when want non-comparable func, but get comparable non-nil": {
-			got:              nonZero["string"],
-			want:             func() {},
-			wantAssertPassed: false,
+		{
+			name: "should fail when want non-comparable func, but get comparable non-nil",
+			args: args{
+				got:  nonZero["string"],
+				want: func() {},
+			},
+			want: false,
 		},
-		"should pass for unequal comparable non-nil args": {
-			got:              nonZero["int"],
-			want:             nonZero["string"],
-			wantAssertPassed: true,
+		{
+			name: "should pass for unequal comparable non-nil args",
+			args: args{
+				got:  nonZero["int"],
+				want: nonZero["string"],
+			},
+			want: true,
 		},
 	}
 
-	t.Parallel()
-	for name, tc := range testCases {
-		tc := tc
-		t.Run(name, func(subT *testing.T) {
-			// given
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			// Given
 			dummyT := &testing.T{}
-			assert := New(dummyT)
+			dummyAssert := New(dummyT)
+			assert := New(t)
 
-			// when
-			assert(tc.got).NotEquals(tc.want)
+			// When
+			got := dummyAssert(tt.args.got).NotEquals(tt.args.want)
 
-			// then
-			gotAssertPassed := !dummyT.Failed()
-			if gotAssertPassed == tc.wantAssertPassed {
-				return
-			}
-			subT.Errorf("expected assert(%#v).NotEquals(%#v) to be %v, found %v", tc.got, tc.want, tc.wantAssertPassed, gotAssertPassed)
+			// Then
+			assert(got).Equals(tt.want)
+			assert(dummyT.Failed()).Equals(!tt.want)
 		})
 	}
 }
@@ -1071,211 +1565,393 @@ func TestNotEquals(t *testing.T) {
 func TestIsJSONEqualTo(t *testing.T) {
 	validJSONObjectAsString := `{"dummy-field": "dummy-value"}`
 	validJSONObjectAsByteSlice := []byte(validJSONObjectAsString)
-	testCases := []struct {
-		name             string
-		got              interface{}
-		want             interface{}
-		wantAssertPassed bool
+
+	invalidJSONObjectAsString := `{"dummy-field": "dummy-value"`
+
+	differentValidJSONObjectAsString := `{"dummy-field": "dummy-value-2"}`
+
+	type args struct {
+		got  interface{}
+		want interface{}
+	}
+	tests := []struct {
+		name string
+		args args
+		want bool
 	}{
 		{
-			name:             "should pass when want and get same valid JSON object as string",
-			got:              validJSONObjectAsString,
-			want:             validJSONObjectAsString,
-			wantAssertPassed: true,
+			name: "should pass when want and get same valid JSON object as string",
+			args: args{
+				got:  validJSONObjectAsString,
+				want: validJSONObjectAsString,
+			},
+			want: true,
 		},
 		{
-			name:             "should pass when want and get same valid JSON object as byte slices",
-			got:              validJSONObjectAsByteSlice,
-			want:             validJSONObjectAsByteSlice,
-			wantAssertPassed: true,
+			name: "should pass when want and get same valid JSON object as byte slices",
+			args: args{
+				got:  validJSONObjectAsByteSlice,
+				want: validJSONObjectAsByteSlice,
+			},
+			want: true,
 		},
 		{
-			name:             "should pass when want same valid JSON object as byte slice, but get it as string",
-			got:              validJSONObjectAsString,
-			want:             validJSONObjectAsByteSlice,
-			wantAssertPassed: true,
+			name: "should pass when want same valid JSON object as byte slice, but get it as string",
+			args: args{
+				got:  validJSONObjectAsString,
+				want: validJSONObjectAsByteSlice,
+			},
+			want: true,
 		},
 		{
-			name:             "should pass when want same valid JSON object as string, but get it as byte slice",
-			got:              validJSONObjectAsByteSlice,
-			want:             validJSONObjectAsString,
-			wantAssertPassed: true,
+			name: "should pass when want same valid JSON object as string, but get it as byte slice",
+			args: args{
+				got:  validJSONObjectAsByteSlice,
+				want: validJSONObjectAsString,
+			},
+			want: true,
 		},
 		{
-			name:             "should fail when want valid JSON object, but get array",
-			got:              nonZero["array"],
-			want:             validJSONObjectAsString,
-			wantAssertPassed: false,
+			name: "should fail when want valid JSON object, but get array",
+			args: args{
+				got:  nonZero["array"],
+				want: validJSONObjectAsString,
+			},
+			want: false,
 		},
 		{
-			name:             "should fail when want valid JSON object, but get bool",
-			got:              nonZero["bool"],
-			want:             validJSONObjectAsString,
-			wantAssertPassed: false,
+			name: "should fail when want valid JSON object, but get bool",
+			args: args{
+				got:  nonZero["bool"],
+				want: validJSONObjectAsString,
+			},
+			want: false,
 		},
 		{
-			name:             "should fail when want valid JSON object, but get byte",
-			got:              nonZero["byte"],
-			want:             validJSONObjectAsString,
-			wantAssertPassed: false,
+			name: "should fail when want valid JSON object, but get byte",
+			args: args{
+				got:  nonZero["byte"],
+				want: validJSONObjectAsString,
+			},
+			want: false,
 		},
 		{
-			name:             "should fail when want valid JSON object, but get chan",
-			got:              nonZero["chan"],
-			want:             validJSONObjectAsString,
-			wantAssertPassed: false,
+			name: "should fail when want valid JSON object, but get chan",
+			args: args{
+				got:  nonZero["chan"],
+				want: validJSONObjectAsString,
+			},
+			want: false,
 		},
 		{
-			name:             "should fail when want valid JSON object, but get complex64",
-			got:              nonZero["complex64"],
-			want:             validJSONObjectAsString,
-			wantAssertPassed: false,
+			name: "should fail when want valid JSON object, but get complex64",
+			args: args{
+				got:  nonZero["complex64"],
+				want: validJSONObjectAsString,
+			},
+			want: false,
 		},
 		{
-			name:             "should fail when want valid JSON object, but get complex128",
-			got:              nonZero["complex128"],
-			want:             validJSONObjectAsString,
-			wantAssertPassed: false,
+			name: "should fail when want valid JSON object, but get complex128",
+			args: args{
+				got:  nonZero["complex128"],
+				want: validJSONObjectAsString,
+			},
+			want: false,
 		},
 		{
-			name:             "should fail when want valid JSON object, but get float32",
-			got:              nonZero["float32"],
-			want:             validJSONObjectAsString,
-			wantAssertPassed: false,
+			name: "should fail when want valid JSON object, but get float32",
+			args: args{
+				got:  nonZero["float32"],
+				want: validJSONObjectAsString,
+			},
+			want: false,
 		},
 		{
-			name:             "should fail when want valid JSON object, but get float64",
-			got:              nonZero["float64"],
-			want:             validJSONObjectAsString,
-			wantAssertPassed: false,
+			name: "should fail when want valid JSON object, but get float64",
+			args: args{
+				got:  nonZero["float64"],
+				want: validJSONObjectAsString,
+			},
+			want: false,
 		},
 		{
-			name:             "should fail when want valid JSON object, but get func",
-			got:              nonZero["func"],
-			want:             validJSONObjectAsString,
-			wantAssertPassed: false,
+			name: "should fail when want valid JSON object, but get func",
+			args: args{
+				got:  nonZero["func"],
+				want: validJSONObjectAsString,
+			},
+			want: false,
 		},
 		{
-			name:             "should fail when want valid JSON object, but get int",
-			got:              nonZero["int"],
-			want:             validJSONObjectAsString,
-			wantAssertPassed: false,
+			name: "should fail when want valid JSON object, but get int",
+			args: args{
+				got:  nonZero["int"],
+				want: validJSONObjectAsString,
+			},
+			want: false,
 		},
 		{
-			name:             "should fail when want valid JSON object, but get int8",
-			got:              nonZero["int8"],
-			want:             validJSONObjectAsString,
-			wantAssertPassed: false,
+			name: "should fail when want valid JSON object, but get int8",
+			args: args{
+				got:  nonZero["int8"],
+				want: validJSONObjectAsString,
+			},
+			want: false,
 		},
 		{
-			name:             "should fail when want valid JSON object, but get int16",
-			got:              nonZero["int16"],
-			want:             validJSONObjectAsString,
-			wantAssertPassed: false,
+			name: "should fail when want valid JSON object, but get int16",
+			args: args{
+				got:  nonZero["int16"],
+				want: validJSONObjectAsString,
+			},
+			want: false,
 		},
 		{
-			name:             "should fail when want valid JSON object, but get int32",
-			got:              nonZero["int32"],
-			want:             validJSONObjectAsString,
-			wantAssertPassed: false,
+			name: "should fail when want valid JSON object, but get int32",
+			args: args{
+				got:  nonZero["int32"],
+				want: validJSONObjectAsString,
+			},
+			want: false,
 		},
 		{
-			name:             "should fail when want valid JSON object, but get int64",
-			got:              nonZero["int64"],
-			want:             validJSONObjectAsString,
-			wantAssertPassed: false,
+			name: "should fail when want valid JSON object, but get int64",
+			args: args{
+				got:  nonZero["int64"],
+				want: validJSONObjectAsString,
+			},
+			want: false,
 		},
 		{
-			name:             "should fail when want valid JSON object, but get interface",
-			got:              nonZero["interface"],
-			want:             validJSONObjectAsString,
-			wantAssertPassed: false,
+			name: "should fail when want valid JSON object, but get interface",
+			args: args{
+				got:  nonZero["interface"],
+				want: validJSONObjectAsString,
+			},
+			want: false,
 		},
 		{
-			name:             "should fail when want valid JSON object, but get map",
-			got:              nonZero["map"],
-			want:             validJSONObjectAsString,
-			wantAssertPassed: false,
+			name: "should fail when want valid JSON object, but get map",
+			args: args{
+				got:  nonZero["map"],
+				want: validJSONObjectAsString,
+			},
+			want: false,
 		},
 		{
-			name:             "should fail when want valid JSON object, but get ptr",
-			got:              nonZero["ptr"],
-			want:             validJSONObjectAsString,
-			wantAssertPassed: false,
+			name: "should fail when want valid JSON object, but get nil",
+			args: args{
+				got:  nil,
+				want: validJSONObjectAsString,
+			},
+			want: false,
 		},
 		{
-			name:             "should fail when want valid JSON object, but get rune",
-			got:              nonZero["rune"],
-			want:             validJSONObjectAsString,
-			wantAssertPassed: false,
+			name: "should fail when want valid JSON object, but get ptr",
+			args: args{
+				got:  nonZero["ptr"],
+				want: validJSONObjectAsString,
+			},
+			want: false,
 		},
 		{
-			name:             "should fail when want valid JSON object, but get slice",
-			got:              nonZero["slice"],
-			want:             validJSONObjectAsString,
-			wantAssertPassed: false,
+			name: "should fail when want valid JSON object, but get rune",
+			args: args{
+				got:  nonZero["rune"],
+				want: validJSONObjectAsString,
+			},
+			want: false,
 		},
 		{
-			name:             "should fail when want valid JSON object, but get string",
-			got:              nonZero["string"],
-			want:             validJSONObjectAsString,
-			wantAssertPassed: false,
+			name: "should fail when want valid JSON object, but get slice",
+			args: args{
+				got:  nonZero["slice"],
+				want: validJSONObjectAsString,
+			},
+			want: false,
 		},
 		{
-			name:             "should fail when want valid JSON object, but get struct",
-			got:              nonZero["struct"],
-			want:             validJSONObjectAsString,
-			wantAssertPassed: false,
+			name: "should fail when want valid JSON object, but get string",
+			args: args{
+				got:  nonZero["string"],
+				want: validJSONObjectAsString,
+			},
+			want: false,
 		},
 		{
-			name:             "should fail when want valid JSON object, but get uint",
-			got:              nonZero["uint"],
-			want:             validJSONObjectAsString,
-			wantAssertPassed: false,
+			name: "should fail when want valid JSON object, but get struct",
+			args: args{
+				got:  nonZero["struct"],
+				want: validJSONObjectAsString,
+			},
+			want: false,
 		},
 		{
-			name:             "should fail when want valid JSON object, but get uint8",
-			got:              nonZero["uint8"],
-			want:             validJSONObjectAsString,
-			wantAssertPassed: false,
+			name: "should fail when want valid JSON object, but get uint",
+			args: args{
+				got:  nonZero["uint"],
+				want: validJSONObjectAsString,
+			},
+			want: false,
 		},
 		{
-			name:             "should fail when want valid JSON object, but get uint16",
-			got:              nonZero["uint16"],
-			want:             validJSONObjectAsString,
-			wantAssertPassed: false,
+			name: "should fail when want valid JSON object, but get uint8",
+			args: args{
+				got:  nonZero["uint8"],
+				want: validJSONObjectAsString,
+			},
+			want: false,
 		},
 		{
-			name:             "should fail when want valid JSON object, but get uint32",
-			got:              nonZero["uint32"],
-			want:             validJSONObjectAsString,
-			wantAssertPassed: false,
+			name: "should fail when want valid JSON object, but get uint16",
+			args: args{
+				got:  nonZero["uint16"],
+				want: validJSONObjectAsString,
+			},
+			want: false,
 		},
 		{
-			name:             "should fail when want valid JSON object, but get uint64",
-			got:              nonZero["uint64"],
-			want:             validJSONObjectAsString,
-			wantAssertPassed: false,
+			name: "should fail when want valid JSON object, but get uint32",
+			args: args{
+				got:  nonZero["uint32"],
+				want: validJSONObjectAsString,
+			},
+			want: false,
+		},
+		{
+			name: "should fail when want valid JSON object, but get uint64",
+			args: args{
+				got:  nonZero["uint64"],
+				want: validJSONObjectAsString,
+			},
+			want: false,
+		},
+		{
+			name: "should fail when want arg is non-(string or []byte), but get valid JSON object",
+			args: args{
+				got:  validJSONObjectAsString,
+				want: nonZero["bool"],
+			},
+			want: false,
+		},
+		{
+			name: "should fail when want arg is slice of non-bytes, but get valid JSON object",
+			args: args{
+				got:  validJSONObjectAsString,
+				want: []bool{},
+			},
+			want: false,
+		},
+		{
+			name: "should fail when want valid JSON object, but get invalid JSON object",
+			args: args{
+				got:  invalidJSONObjectAsString,
+				want: validJSONObjectAsString,
+			},
+			want: false,
+		},
+		{
+			name: "should fail when want invalid JSON object, but get valid JSON object",
+			args: args{
+				got:  validJSONObjectAsString,
+				want: invalidJSONObjectAsString,
+			},
+			want: false,
+		},
+		{
+			name: "should fail when want same valid JSON object, but get another",
+			args: args{
+				got:  differentValidJSONObjectAsString,
+				want: validJSONObjectAsString,
+			},
+			want: false,
 		},
 	}
 
 	t.Parallel()
-	for _, tc := range testCases {
-		tc := tc
-		t.Run(tc.name, func(t *testing.T) {
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
 			// Given
-			dummyT := testing.T{}
-			assert := New(&dummyT)
+			dummyT := &testing.T{}
+			dummyAssert := New(dummyT)
+			assert := New(t)
 
 			// When
-			assert(tc.got).IsJSONEqualTo(tc.got)
+			got := dummyAssert(tt.args.got).IsJSONEqualTo(tt.args.want)
 
 			// Then
-			gotAssertPassed := !dummyT.Failed()
-			if gotAssertPassed == tc.wantAssertPassed {
-				return
-			}
-			t.Errorf("expected assert(%#v).IsJSONEqualTo(%#v) to be %v, found %v", tc.got, tc.want, tc.wantAssertPassed, gotAssertPassed)
+			assert(got).Equals(tt.want)
+			assert(dummyT.Failed()).Equals(!tt.want)
+		})
+	}
+}
+
+func TestIsWantedError(t *testing.T) {
+	type args struct {
+		got     interface{}
+		wantErr bool
+	}
+	tests := []struct {
+		name string
+		args args
+		want bool
+	}{
+		{
+			name: "should return true when wantErr and get non-nil error",
+			args: args{
+				got:     nonZero["error"],
+				wantErr: true,
+			},
+			want: true,
+		},
+		{
+			name: "should return true when not wantErr and get nil error",
+			args: args{
+				got:     zero["error"],
+				wantErr: false,
+			},
+			want: true,
+		},
+		{
+			name: "should return false when wantErr and get nil error",
+			args: args{
+				got:     zero["error"],
+				wantErr: true,
+			},
+			want: false,
+		},
+		{
+			name: "should return false when not wantErr and get non-nil error",
+			args: args{
+				got:     nonZero["error"],
+				wantErr: false,
+			},
+			want: false,
+		},
+		{
+			name: "should return false when wantErr and get non-error",
+			args: args{
+				got:     nonZero["struct"],
+				wantErr: true,
+			},
+			want: true,
+		},
+	}
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			// Given
+			dummyT := &testing.T{}
+			dummyAssert := New(dummyT)
+			assert := New(t)
+			require := NewFatal(t)
+
+			// When
+			got := dummyAssert(tt.args.got).IsWantedError(tt.args.wantErr)
+
+			// Then
+			assert(got).Equals(tt.want)
+			require(dummyT.Failed()).Equals(!tt.want)
 		})
 	}
 }
