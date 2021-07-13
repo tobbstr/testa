@@ -1867,6 +1867,38 @@ func TestIsJSONEqualTo(t *testing.T) {
 			},
 			want: false,
 		},
+		{
+			name: "should fail when want valid JSON object, but get empty string",
+			args: args{
+				got:  "",
+				want: validJSONObjectAsString,
+			},
+			want: false,
+		},
+		{
+			name: "should fail when want empty string, but get valid JSON object",
+			args: args{
+				got:  validJSONObjectAsString,
+				want: "",
+			},
+			want: false,
+		},
+		{
+			name: "should pass when want and get empty string",
+			args: args{
+				got:  "",
+				want: "",
+			},
+			want: true,
+		},
+		{
+			name: "should pass when want and get nil",
+			args: args{
+				got:  nil,
+				want: nil,
+			},
+			want: true,
+		},
 	}
 
 	t.Parallel()
@@ -1935,7 +1967,7 @@ func TestIsWantedError(t *testing.T) {
 				got:     nonZero["struct"],
 				wantErr: true,
 			},
-			want: true,
+			want: false,
 		},
 	}
 	for _, tt := range tests {
