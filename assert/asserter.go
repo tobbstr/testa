@@ -352,6 +352,10 @@ func (a asserter) NotEquals(want interface{}) bool {
 // IsJSONEqualTo asserts the observed value is valid JSON and that it equals the 'want' argument.
 // If not equal, the function under test is marked as having failed.
 func (a asserter) IsJSONEqualTo(want interface{}) bool {
+	if isNil(a.got) && isNil(want) {
+		return true
+	}
+
 	if a.got == nil || want == nil {
 		a.errorf("Invalid argument", want, true)
 		return false
@@ -384,6 +388,9 @@ func (a asserter) IsJSONEqualTo(want interface{}) bool {
 			return false
 		}
 	}
+	if isEmpty(gotAsBytes) {
+		gotAsBytes = []byte("{}")
+	}
 
 	var wantAsBytes []byte
 	if wantKind == reflect.String {
@@ -395,6 +402,9 @@ func (a asserter) IsJSONEqualTo(want interface{}) bool {
 			a.errorf("Expected slice must be a slice of bytes", want, true)
 			return false
 		}
+	}
+	if isEmpty(wantAsBytes) {
+		wantAsBytes = []byte("{}")
 	}
 
 	var got1 interface{}
