@@ -2,6 +2,8 @@ package assert
 
 import (
 	"fmt"
+	"io"
+	"strings"
 	"testing"
 )
 
@@ -10,7 +12,7 @@ var (
 		"array":      [3]int{0, 0, 0},
 		"bool":       false,
 		"byte":       byte(0),
-		"chan":       (chan (struct{}))(nil),
+		"chan":       (chan struct{})(nil),
 		"complex64":  complex64(0),
 		"complex128": complex128(0),
 		"float32":    float32(0),
@@ -39,7 +41,7 @@ var (
 		"array":      [3]int{1, 2, 3},
 		"bool":       true,
 		"byte":       byte(3),
-		"chan":       make(chan (int)),
+		"chan":       make(chan struct{}),
 		"complex64":  2 + 2i,
 		"complex128": complex(float64(5), float64(2)),
 		"float32":    float32(5.1),
@@ -1984,6 +1986,248 @@ func TestIsWantedError(t *testing.T) {
 			// Then
 			assert(got).Equals(tt.want)
 			require(dummyT.Failed()).Equals(!tt.want)
+		})
+	}
+}
+
+func TestIsType(t *testing.T) {
+	type args struct {
+		got  interface{}
+		want interface{}
+	}
+	tests := []struct {
+		name string
+		args args
+		want bool
+	}{
+		{
+			name: "should return true when both want and get nil",
+			args: args{
+				got:  nil,
+				want: nil,
+			},
+			want: true,
+		},
+		{
+			name: "should return true when both want and get array",
+			args: args{
+				got:  nonZero["array"],
+				want: zero["array"],
+			},
+			want: true,
+		},
+		{
+			name: "should return true when both want and get bool",
+			args: args{
+				got:  nonZero["bool"],
+				want: zero["bool"],
+			},
+			want: true,
+		},
+		{
+			name: "should return true when both want and get byte",
+			args: args{
+				got:  nonZero["byte"],
+				want: zero["byte"],
+			},
+			want: true,
+		},
+		{
+			name: "should return true when both want and get chan",
+			args: args{
+				got:  nonZero["chan"],
+				want: zero["chan"],
+			},
+			want: true,
+		},
+		{
+			name: "should return true when both want and get func",
+			args: args{
+				got:  nonZero["func"],
+				want: zero["func"],
+			},
+			want: true,
+		},
+		{
+			name: "should return false when want func but get func of different type",
+			args: args{
+				got:  func(i int) int { return 2 },
+				want: func() {},
+			},
+			want: false,
+		},
+		{
+			name: "should return true when both want and get map",
+			args: args{
+				got:  nonZero["map"],
+				want: zero["map"],
+			},
+			want: true,
+		},
+		{
+			name: "should return false when want map but get map of different type",
+			args: args{
+				got:  map[string]struct{}{},
+				want: map[int]struct{}{},
+			},
+			want: false,
+		},
+		{
+			name: "should return true when both want and get same ptr type",
+			args: args{
+				got:  &struct{ name string }{},
+				want: &struct{ name string }{},
+			},
+			want: true,
+		},
+		{
+			name: "should return false when want zeroPtr but get ptr",
+			args: args{
+				got:  nonZero["ptr"],
+				want: zero["ptr"],
+			},
+			want: false,
+		},
+		{
+			name: "should return false when want ptr but get zeroPtr",
+			args: args{
+				got:  zero["ptr"],
+				want: nonZero["ptr"],
+			},
+			want: false,
+		},
+		{
+			name: "should return false when want ptr but get ptr of different type",
+			args: args{
+				got:  &struct{}{},
+				want: &struct{ name string }{},
+			},
+			want: false,
+		},
+		{
+			name: "should return true when both want and get the same slice type",
+			args: args{
+				got:  []int{1, 2, 3},
+				want: []int{4, 5},
+			},
+			want: true,
+		},
+		{
+			name: "should return false when want slice but get slice of different type",
+			args: args{
+				got:  []int{},
+				want: []string{},
+			},
+			want: false,
+		},
+		{
+			name: "should return true when want slice but get nil slice of same type",
+			args: args{
+				got:  ([]int)(nil),
+				want: []int{},
+			},
+			want: true,
+		},
+		{
+			name: "should return true when want nil slice but get slice of same type",
+			args: args{
+				got:  []int{},
+				want: ([]int)(nil),
+			},
+			want: true,
+		},
+	}
+
+	t.Parallel()
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			// Given
+			assert := NewFatal(t)
+			dummyT := &testing.T{}
+			dummyAssert := New(dummyT)
+
+			// When
+			got := dummyAssert(tt.args.got).IsType(tt.args.want)
+
+			// Then
+			assert(got).Equals(tt.want)
+			assert(dummyT.Failed()).Equals(!tt.want)
+		})
+	}
+}
+
+func TestImplements(t *testing.T) {
+	type args struct {
+		got  interface{}
+		want interface{}
+	}
+	tests := []struct {
+		name string
+		args args
+		want bool
+	}{
+		{
+			name: "should return true when both want and get the same interface",
+			args: args{
+				got:  nonZero["error"],
+				want: (*error)(nil),
+			},
+			want: true,
+		},
+		{
+			name: "should return true when want interface but get ptr to it",
+			args: args{
+				got:  strings.NewReader(""),
+				want: (*io.Reader)(nil),
+			},
+			want: true,
+		},
+		{
+			name: "should return false when want different interface from gotten",
+			args: args{
+				got:  strings.NewReader(""),
+				want: (*error)(nil),
+			},
+			want: false,
+		},
+		{
+			name: "should return false when want non-interface",
+			args: args{
+				got:  strings.NewReader(""),
+				want: nonZero["byte"],
+			},
+			want: false,
+		},
+		{
+			name: "should return false when get nil",
+			args: args{
+				got:  nil,
+				want: nonZero["byte"],
+			},
+			want: false,
+		},
+		{
+			name: "should return false when want nil",
+			args: args{
+				got:  "value doesn't matter",
+				want: nil,
+			},
+			want: false,
+		},
+	}
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			// Given
+			assert := NewFatal(t)
+			dummyT := &testing.T{}
+			dummyAssert := New(dummyT)
+
+			// When
+			got := dummyAssert(tt.args.got).Implements(tt.args.want)
+
+			// Then
+			assert(got).Equals(tt.want)
+			assert(dummyT.Failed()).Equals(!tt.want)
 		})
 	}
 }
