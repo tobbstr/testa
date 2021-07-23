@@ -13,7 +13,7 @@ const (
 Assertion failed!
 	Description: {{.Msg}}
 	Expected: {{.Want}}
-	Observed:  {{.Got}}
+	Observed: {{.Got}}
 
 Call stack:
 {{range .Entries}}
