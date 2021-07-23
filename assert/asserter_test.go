@@ -2156,3 +2156,78 @@ func TestIsType(t *testing.T) {
 	}
 }
 
+func TestImplements(t *testing.T) {
+	type args struct {
+		got  interface{}
+		want interface{}
+	}
+	tests := []struct {
+		name string
+		args args
+		want bool
+	}{
+		{
+			name: "should return true when both want and get the same interface",
+			args: args{
+				got:  nonZero["error"],
+				want: (*error)(nil),
+			},
+			want: true,
+		},
+		{
+			name: "should return true when want interface but get ptr to it",
+			args: args{
+				got:  strings.NewReader(""),
+				want: (*io.Reader)(nil),
+			},
+			want: true,
+		},
+		{
+			name: "should return false when want different interface from gotten",
+			args: args{
+				got:  strings.NewReader(""),
+				want: (*error)(nil),
+			},
+			want: false,
+		},
+		{
+			name: "should return false when want non-interface",
+			args: args{
+				got:  strings.NewReader(""),
+				want: nonZero["byte"],
+			},
+			want: false,
+		},
+		{
+			name: "should return false when get nil",
+			args: args{
+				got:  nil,
+				want: nonZero["byte"],
+			},
+			want: false,
+		},
+		{
+			name: "should return false when want nil",
+			args: args{
+				got:  "value doesn't matter",
+				want: nil,
+			},
+			want: false,
+		},
+	}
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			// Given
+			assert := NewFatal(t)
+			dummyT := &testing.T{}
+			dummyAssert := New(dummyT)
+
+			// When
+			got := dummyAssert(tt.args.got).Implements(tt.args.want)
+
+			// Then
+			assert(got).Equals(tt.want)
+			assert(dummyT.Failed()).Equals(!tt.want)
+		})
+	}
+}

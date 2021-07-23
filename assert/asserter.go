@@ -504,3 +504,38 @@ func isChan(arg interface{}) bool {
 	}
 	return reflect.TypeOf(arg).Kind() == reflect.Chan
 }
+
+// Implements asserts the observed value implements the wanted interface. If it does not, the function under test
+// is marked as having failed.
+//
+//		got:	The observed value to check for interface implementations.
+//				- Only non-nil values are allowed
+//				- Both values and pointers are allowed
+//
+//		want:	The interface the observed value is checked against.
+//				- Only pointers to interfaces are allowed
+//
+//	Example: Asserts *strings.Reader implements io.Reader
+//		assert(strings.NewReader("dummy-str")).Implements((*io.Reader)(nil))
+func (a asserter) Implements(want interface{}) bool {
+	if isNil(a.got) || want == nil {
+		a.errorf("Observed/Expected value must non-nil", want, true)
+		return false
+	}
+
+	wantKind := reflect.ValueOf(want).Kind()
+
+	if wantKind != reflect.Ptr {
+		a.errorf("Expected value must be a pointer to an interface", want, true)
+		return false
+	}
+
+	wantType := reflect.TypeOf(want).Elem()
+
+	if !reflect.TypeOf(a.got).Implements(wantType) {
+		a.errorf("Observed value must implement expected interface", want, true)
+		return false
+	}
+
+	return true
+}
